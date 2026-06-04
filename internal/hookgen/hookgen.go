@@ -38,7 +38,7 @@ func Generate(cfg Config) string {
 	for _, event := range events {
 		result += "\n"
 		result += fmt.Sprintf("[[hooks.%s]]\n", event)
-		result += fmt.Sprintf("hooks = [{ type = \"command\", command = \"curl -s -X POST http://%s/update -d '{\\\"event\\\":\\\"%s\\\"}' &\" }]\n", addr, event)
+		result += fmt.Sprintf("hooks = [{ type = \"command\", command = \"curl -s -X POST http://%s/update -d '{\\\"event\\\":\\\"%s\\\"}'\", async = true }]\n", addr, event)
 	}
 
 	return result

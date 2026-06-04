@@ -171,7 +171,8 @@ func Inject(cfg CodexConfig, serverAddr string) CodexConfig {
 			"hooks": []interface{}{
 				map[string]interface{}{
 					"type":    "command",
-					"command": fmt.Sprintf("curl -s -X POST http://%s/update -d '{\"event\":\"%s\"}' &", serverAddr, event),
+					"command": fmt.Sprintf("curl -s -X POST http://%s/update -d '{\"event\":\"%s\"}'", serverAddr, event),
+					"async":   true,
 				},
 			},
 		}

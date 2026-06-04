@@ -85,8 +85,14 @@ func TestInject_AddsEntries(t *testing.T) {
 	entry := entries[0].(map[string]interface{})
 	hooksField := entry["hooks"].([]interface{})
 	cmd := hooksField[0].(map[string]interface{})["command"].(string)
-	if cmd != "curl -s -X POST http://localhost:9876/update -d '{\"event\":\"SessionStart\"}' &" {
+	if cmd != "curl -s -X POST http://localhost:9876/update -d '{\"event\":\"SessionStart\"}'" {
 		t.Fatalf("unexpected command: %s", cmd)
+	}
+
+	// Verify async is set
+	asyncVal := hooksField[0].(map[string]interface{})["async"]
+	if asyncVal != true {
+		t.Fatalf("expected async=true, got %v", asyncVal)
 	}
 }
 
@@ -110,7 +116,7 @@ func TestInject_CleansUpOldEntriesFirst(t *testing.T) {
 	entry := entries[0].(map[string]interface{})
 	hooksField := entry["hooks"].([]interface{})
 	cmd := hooksField[0].(map[string]interface{})["command"].(string)
-	if cmd != "curl -s -X POST http://localhost:9999/update -d '{\"event\":\"SessionStart\"}' &" {
+	if cmd != "curl -s -X POST http://localhost:9999/update -d '{\"event\":\"SessionStart\"}'" {
 		t.Fatalf("unexpected command: %s", cmd)
 	}
 }
