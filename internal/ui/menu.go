@@ -3,9 +3,6 @@
 package ui
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/progrium/darwinkit/helper/action"
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/progrium/darwinkit/objc"
@@ -20,15 +17,9 @@ const (
 
 // MenuConfig holds the dependencies needed to build the menu.
 type MenuConfig struct {
-	Machine           *state.Machine
-	Registry          InstalledLister
-	Blink             *BlinkController
-	OnQuit            func()
-}
-
-// InstalledLister provides the list of adapters that have hooks injected.
-type InstalledLister interface {
-	InstalledAdapters() []string
+	Machine *state.Machine
+	Blink   *BlinkController
+	OnQuit  func()
 }
 
 // BuildMenu constructs the status bar menu and registers the OnChange callback.
@@ -40,17 +31,6 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 	mStatus := appkit.NewMenuItemWithTitleActionKeyEquivalent(StatusLabel(state.StatusIdle), objc.Selector{}, "")
 	mStatus.SetEnabled(false)
 	menu.AddItem(mStatus)
-
-	menu.AddItem(appkit.MenuItem_SeparatorItem())
-
-	// Show injected adapter list
-	for _, name := range cfg.Registry.InstalledAdapters() {
-		mAdapter := appkit.NewMenuItemWithTitleActionKeyEquivalent(
-			fmt.Sprintf("✓ %s", name), objc.Selector{}, "",
-		)
-		mAdapter.SetEnabled(false)
-		menu.AddItem(mAdapter)
-	}
 
 	menu.AddItem(appkit.MenuItem_SeparatorItem())
 
@@ -89,11 +69,7 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 		}
 
 		cfg.Blink.Btn.SetImage(icons.ForStatus(newStatus))
-		tooltip := "Codex Bar " + StatusLabel(newStatus)
-		if names := cfg.Registry.InstalledAdapters(); len(names) > 0 {
-			tooltip += " [" + strings.Join(names, ", ") + "]"
-		}
-		cfg.Blink.Btn.SetToolTip(tooltip)
+		cfg.Blink.Btn.SetToolTip("Codex Bar " + StatusLabel(newStatus))
 		mStatus.SetTitle(StatusLabel(newStatus))
 
 		if soundOn {

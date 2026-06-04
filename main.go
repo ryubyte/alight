@@ -74,9 +74,8 @@ func didLaunch(app appkit.Application, delegate *appkit.ApplicationDelegate) {
 
 	// Build menu
 	menu := ui.BuildMenu(ui.MenuConfig{
-		Machine:  machine,
-		Registry: registry,
-		Blink:    blink,
+		Machine: machine,
+		Blink:   blink,
 		OnQuit: func() {
 			registry.CleanupAll()
 			app.Terminate(nil)
