@@ -7,7 +7,7 @@ import (
 
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/ryubyte/codex-bar/internal/icons"
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/codex-bar/internal/core/state"
 )
 
 const blinkInterval = 1200 * time.Millisecond

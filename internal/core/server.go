@@ -1,4 +1,4 @@
-package server
+package core
 
 import (
 	"encoding/json"
@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/codex-bar/internal/core/state"
 )
 
 // UpdateRequest represents the JSON body for POST /update.
 type UpdateRequest struct {
 	Status    string `json:"status"`
 	EventName string `json:"event"`
+	Source    string `json:"source"`
 	SessionID string `json:"session_id"`
 	ToolName  string `json:"tool_name"`
 }
@@ -27,15 +28,17 @@ type StatusResponse struct {
 
 // Server is an HTTP server that exposes the state machine.
 type Server struct {
-	machine *state.Machine
-	addr    string
+	machine  *state.Machine
+	registry *Registry
+	addr     string
 }
 
-// New creates a new Server.
-func New(machine *state.Machine, addr string) *Server {
+// NewServer creates a new Server.
+func NewServer(machine *state.Machine, registry *Registry, addr string) *Server {
 	return &Server{
-		machine: machine,
-		addr:    addr,
+		machine:  machine,
+		registry: registry,
+		addr:     addr,
 	}
 }
 
@@ -88,7 +91,7 @@ func (s *Server) handleUpdate(w http.ResponseWriter, r *http.Request) {
 	if req.Status != "" {
 		status = state.Status(req.Status)
 	} else {
-		status = state.TransitionFromHook(req.EventName)
+		status = s.registry.MapEvent(req.Source, req.EventName)
 	}
 
 	s.machine.Update(state.Event{
@@ -143,18 +146,15 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	// Register callback and obtain unregister function
 	unregister := s.machine.OnChange(func(old, new state.Status, event state.Event) {
 		data, _ := json.Marshal(event)
 		fmt.Fprintf(w, "data: %s\n\n", data)
 		flusher.Flush()
 	})
 
-	// Send initial comment to establish connection
 	fmt.Fprint(w, ": connected\n\n")
 	flusher.Flush()
 
-	// Block until client disconnects, then unregister the callback
 	<-r.Context().Done()
 	unregister()
 }

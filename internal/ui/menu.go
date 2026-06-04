@@ -11,7 +11,7 @@ import (
 	"github.com/progrium/darwinkit/objc"
 	"github.com/ryubyte/codex-bar/internal/hookgen"
 	"github.com/ryubyte/codex-bar/internal/icons"
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/codex-bar/internal/core/state"
 )
 
 const (

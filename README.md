@@ -190,23 +190,22 @@ make clean
 
 ```
 codex-bar/
-├── main.go                        # 入口，AppKit 启动 + hooks 注入/清理
+├── main.go                        # 入口，注册适配器 + AppKit 启动
 ├── internal/
-│   ├── claudecfg/                 # Claude Code settings.json 读写 + hooks 注入
-│   │   ├── claudecfg.go
-│   │   └── claudecfg_test.go
-│   ├── codexcfg/                  # Codex CLI config.toml 读写 + hooks 注入
-│   │   ├── codexcfg.go
-│   │   └── codexcfg_test.go
+│   ├── core/                      # 核心层（零依赖 AI 工具）
+│   │   ├── adapter.go             # Adapter 接口 + Registry
+│   │   ├── server.go              # HTTP 服务 + SSE + 端口检测
+│   │   ├── state/                 # 状态机 + 回调管理
+│   │   │   └── state.go
+│   ├── adapter/                   # 适配器层（每个 AI 工具一个子包）
+│   │   ├── codex/                 # Codex CLI: config.toml + TOML hooks
+│   │   │   └── codex.go
+│   │   └── claude/                # Claude Code: settings.json + JSON hooks
+│   │       └── claude.go
 │   ├── hookgen/                   # Hooks TOML 生成（复制到剪贴板用）
-│   │   ├── hookgen.go
-│   │   └── hookgen_test.go
+│   │   └── hookgen.go
 │   ├── icons/                     # darwinkit NSImage 红绿灯绘制
 │   │   └── icons.go
-│   ├── server/                    # HTTP 服务 + SSE + 端口检测
-│   │   └── server.go
-│   ├── state/                     # 状态机 + 回调管理
-│   │   └── state.go
 │   └── ui/                        # 菜单栏 UI
 │       ├── blink.go               # 红灯闪烁控制器
 │       ├── label.go               # 状态标签 + 声音 + 剪贴板
@@ -214,6 +213,29 @@ codex-bar/
 ├── Makefile
 └── README.md
 ```
+
+### 新增适配器
+
+只需 3 步，核心代码零修改：
+
+1. 在 `internal/adapter/` 下新建子包，实现 `core.Adapter` 接口：
+
+```go
+type Adapter interface {
+    Name() string                    // 唯一标识
+    Inject(port string) error        // 注入 hooks
+    Cleanup() error                  // 清理 hooks
+    MapEvent(eventName string) state.Status  // 事件映射
+}
+```
+
+2. 在 `main.go` 中注册：
+
+```go
+registry.Register(your_adapter.New())
+```
+
+3. 完成。
 
 ## 技术栈
 

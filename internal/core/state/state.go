@@ -1,3 +1,4 @@
+// Package state provides a concurrent-safe state machine for tracking AI tool status.
 package state
 
 import (
@@ -108,19 +109,4 @@ func (m *Machine) History() []Event {
 	cp := make([]Event, len(m.history))
 	copy(cp, m.history)
 	return cp
-}
-
-// TransitionFromHook maps a hook event name to the corresponding Status.
-func TransitionFromHook(hookEvent string) Status {
-	switch hookEvent {
-	case "SessionStart", "PreToolUse", "PostToolUse", "UserPromptSubmit",
-		"SubagentStart", "PreCompact", "PostCompact":
-		return StatusRunning
-	case "PermissionRequest":
-		return StatusApprovalNeeded
-	case "Stop", "StopFailure", "SubagentStop":
-		return StatusCompleted
-	default:
-		return StatusIdle
-	}
 }

@@ -5,7 +5,7 @@ package icons
 import (
 	"testing"
 
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/codex-bar/internal/core/state"
 )
 
 func TestForStatus_NonNilImage(t *testing.T) {
