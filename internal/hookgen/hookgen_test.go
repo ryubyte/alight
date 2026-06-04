@@ -41,8 +41,8 @@ func TestGenerateUsesProvidedServerAddr(t *testing.T) {
 		t.Errorf("generated config does not contain provided ServerAddr %q", addr)
 	}
 
-	// Make sure the command line references the custom addr
-	expectedCmd := "curl -s -X POST http://" + addr + "/update"
+	// Make sure the command line references the custom addr and source marker
+	expectedCmd := "curl -s -X POST 'http://" + addr + "/update?source=codex-bar'"
 	if !strings.Contains(output, expectedCmd) {
 		t.Errorf("generated config does not contain expected command with addr %q", addr)
 	}

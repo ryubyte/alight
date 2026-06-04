@@ -171,7 +171,7 @@ func Inject(cfg CodexConfig, serverAddr string) CodexConfig {
 			"hooks": []interface{}{
 				map[string]interface{}{
 					"type":    "command",
-					"command": fmt.Sprintf("curl -s -X POST http://%s/update -d '{\"event\":\"%s\"}'", serverAddr, event),
+					"command": fmt.Sprintf("curl -s -X POST 'http://%s/update?source=codex-bar' -d '{\"event\":\"%s\"}'", serverAddr, event),
 					"async":   true,
 				},
 			},
@@ -187,11 +187,7 @@ func Inject(cfg CodexConfig, serverAddr string) CodexConfig {
 	return cfg
 }
 
-// containsCodexBarURL checks if a command string contains the codex-bar update endpoint.
-// It matches commands that reference /update on localhost or 127.0.0.1.
+// containsCodexBarURL checks if a command string was injected by codex-bar.
 func containsCodexBarURL(cmd string) bool {
-	if !strings.Contains(cmd, "/update") {
-		return false
-	}
-	return strings.Contains(cmd, "localhost") || strings.Contains(cmd, "127.0.0.1")
+	return strings.Contains(cmd, "source=codex-bar")
 }

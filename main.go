@@ -11,6 +11,7 @@ import (
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/progrium/darwinkit/objc"
 
+	"github.com/ryubyte/codex-bar/internal/claudecfg"
 	"github.com/ryubyte/codex-bar/internal/codexcfg"
 	"github.com/ryubyte/codex-bar/internal/icons"
 	"github.com/ryubyte/codex-bar/internal/server"
@@ -35,23 +36,19 @@ func didLaunch(app appkit.Application, delegate *appkit.ApplicationDelegate) {
 		log.Fatalf("find free port: %v", err)
 	}
 	serverAddr := fmt.Sprintf("localhost:%d", port)
+	portStr := fmt.Sprintf("%d", port)
 
-	// Cleanup stale hooks from previous runs, then inject fresh ones
-	cfg, err := codexcfg.Read()
-	if err != nil {
-		log.Printf("warning: read codex config: %v", err)
-	}
-	cfg = codexcfg.Inject(cfg, serverAddr)
-	if err := codexcfg.Write(cfg); err != nil {
-		log.Printf("warning: write codex config: %v", err)
-	}
+	// Inject hooks for Codex CLI
+	injectCodexHooks(serverAddr)
+	// Inject hooks for Claude Code
+	injectClaudeHooks(portStr)
 
 	// Setup cleanup on exit (no defer — didLaunch returns immediately)
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
 	go func() {
 		<-sigCh
-		cleanupHooks()
+		cleanupAllHooks()
 		app.Terminate(nil)
 	}()
 
@@ -80,21 +77,44 @@ func didLaunch(app appkit.Application, delegate *appkit.ApplicationDelegate) {
 		Port:       port,
 		Blink:      blink,
 		OnQuit: func() {
-			cleanupHooks()
+			cleanupAllHooks()
 			app.Terminate(nil)
 		},
 	})
 	item.SetMenu(menu)
 }
 
-func cleanupHooks() {
+func injectCodexHooks(serverAddr string) {
+	cfg, err := codexcfg.Read()
+	if err != nil {
+		log.Printf("warning: read codex config: %v", err)
+	}
+	cfg = codexcfg.Inject(cfg, serverAddr)
+	if err := codexcfg.Write(cfg); err != nil {
+		log.Printf("warning: write codex config: %v", err)
+	}
+}
+
+func injectClaudeHooks(port string) {
+	if err := claudecfg.Inject(port); err != nil {
+		log.Printf("warning: inject claude hooks: %v", err)
+	}
+}
+
+func cleanupAllHooks() {
+	// Cleanup Codex CLI hooks
 	cfg, err := codexcfg.Read()
 	if err != nil {
 		log.Printf("warning: read codex config for cleanup: %v", err)
-		return
+	} else {
+		cfg = codexcfg.Cleanup(cfg)
+		if err := codexcfg.Write(cfg); err != nil {
+			log.Printf("warning: write codex config for cleanup: %v", err)
+		}
 	}
-	cfg = codexcfg.Cleanup(cfg)
-	if err := codexcfg.Write(cfg); err != nil {
-		log.Printf("warning: write codex config for cleanup: %v", err)
+
+	// Cleanup Claude Code hooks
+	if err := claudecfg.Cleanup(); err != nil {
+		log.Printf("warning: cleanup claude hooks: %v", err)
 	}
 }

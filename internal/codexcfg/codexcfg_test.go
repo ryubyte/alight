@@ -13,7 +13,7 @@ func TestCleanup_RemovesCodexBarEntries(t *testing.T) {
 					"hooks": []interface{}{
 						map[string]interface{}{
 							"type":    "command",
-							"command": "curl -s -X POST http://localhost:9876/update -d '{\"event\":\"SessionStart\"}' &",
+							"command": "curl -s -X POST 'http://localhost:9876/update?source=codex-bar' -d '{\"event\":\"SessionStart\"}'",
 						},
 					},
 				},
@@ -53,7 +53,7 @@ func TestCleanup_EmptyHooksSectionRemoved(t *testing.T) {
 					"hooks": []interface{}{
 						map[string]interface{}{
 							"type":    "command",
-							"command": "curl -s -X POST http://localhost:9876/update -d '{\"event\":\"SessionStart\"}' &",
+							"command": "curl -s -X POST 'http://localhost:9876/update?source=codex-bar' -d '{\"event\":\"SessionStart\"}'",
 						},
 					},
 				},
@@ -85,7 +85,8 @@ func TestInject_AddsEntries(t *testing.T) {
 	entry := entries[0].(map[string]interface{})
 	hooksField := entry["hooks"].([]interface{})
 	cmd := hooksField[0].(map[string]interface{})["command"].(string)
-	if cmd != "curl -s -X POST http://localhost:9876/update -d '{\"event\":\"SessionStart\"}'" {
+	expected := "curl -s -X POST 'http://localhost:9876/update?source=codex-bar' -d '{\"event\":\"SessionStart\"}'"
+	if cmd != expected {
 		t.Fatalf("unexpected command: %s", cmd)
 	}
 
@@ -116,7 +117,8 @@ func TestInject_CleansUpOldEntriesFirst(t *testing.T) {
 	entry := entries[0].(map[string]interface{})
 	hooksField := entry["hooks"].([]interface{})
 	cmd := hooksField[0].(map[string]interface{})["command"].(string)
-	if cmd != "curl -s -X POST http://localhost:9999/update -d '{\"event\":\"SessionStart\"}'" {
+	expected := "curl -s -X POST 'http://localhost:9999/update?source=codex-bar' -d '{\"event\":\"SessionStart\"}'"
+	if cmd != expected {
 		t.Fatalf("unexpected command: %s", cmd)
 	}
 }
@@ -212,8 +214,7 @@ func TestContainsCodexBarURL(t *testing.T) {
 		cmd      string
 		expected bool
 	}{
-		{"curl -s -X POST http://localhost:9876/update -d '{\"event\":\"SessionStart\"}' &", true},
-		{"curl -s -X POST http://127.0.0.1:9876/update -d '{\"event\":\"SessionStart\"}' &", true},
+		{"curl -s -X POST 'http://localhost:9876/update?source=codex-bar' -d '{\"event\":\"SessionStart\"}'", true},
 		{"echo hello", false},
 		{"curl -s -X POST https://example.com/api", false},
 	}

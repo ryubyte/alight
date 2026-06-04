@@ -118,7 +118,7 @@ func TransitionFromHook(hookEvent string) Status {
 		return StatusRunning
 	case "PermissionRequest":
 		return StatusApprovalNeeded
-	case "Stop", "SubagentStop":
+	case "Stop", "StopFailure", "SubagentStop":
 		return StatusCompleted
 	default:
 		return StatusIdle
