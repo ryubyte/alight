@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"time"
 
@@ -41,6 +42,25 @@ func New(machine *state.Machine, addr string) *Server {
 // Addr returns the server address.
 func (s *Server) Addr() string {
 	return s.addr
+}
+
+// Port returns the server port.
+func (s *Server) Port() string {
+	_, port, _ := net.SplitHostPort(s.addr)
+	return port
+}
+
+// FindFreePort returns an available port on localhost starting from the given port.
+func FindFreePort(startPort int) (int, error) {
+	for port := startPort; port < startPort+100; port++ {
+		addr := fmt.Sprintf("localhost:%d", port)
+		ln, err := net.Listen("tcp", addr)
+		if err == nil {
+			ln.Close()
+			return port, nil
+		}
+	}
+	return 0, fmt.Errorf("no free port found in range %d-%d", startPort, startPort+99)
 }
 
 // ListenAndServe registers routes and starts the HTTP server.

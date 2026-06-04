@@ -1,202 +1,156 @@
+//go:build darwin
+
 package icons
 
 import (
-	"bytes"
-	"image"
-	"image/color"
-	"image/png"
-	"math"
-	"sync"
-
+	"github.com/progrium/darwinkit/macos/appkit"
+	"github.com/progrium/darwinkit/macos/foundation"
 	"github.com/ryubyte/codex-bar/internal/state"
 )
 
-// macOS menu bar icon dimensions (Retina: 44x44 for 22pt logical)
-const size = 44
-
-// Traffic signal 🚥 style: 3 horizontal lights in a dark housing
-// [🔴 Red=Approval] [🟡 Yellow=Running] [🟢 Green=Completed]
-// Active state is brightly lit, others are dim.
-
-type lightDef struct {
-	on   color.NRGBA
-	off  color.NRGBA
-	glow color.NRGBA
-}
-
-var lights = []lightDef{
-	{ // Red — approval needed
-		on:   color.NRGBA{R: 255, G: 59, B: 48, A: 255},
-		off:  color.NRGBA{R: 60, G: 20, B: 18, A: 200},
-		glow: color.NRGBA{R: 255, G: 59, B: 48, A: 50},
-	},
-	{ // Yellow — running
-		on:   color.NRGBA{R: 255, G: 204, B: 0, A: 255},
-		off:  color.NRGBA{R: 60, G: 50, B: 5, A: 200},
-		glow: color.NRGBA{R: 255, G: 204, B: 0, A: 50},
-	},
-	{ // Green — completed
-		on:   color.NRGBA{R: 52, G: 199, B: 89, A: 255},
-		off:  color.NRGBA{R: 15, G: 50, B: 25, A: 200},
-		glow: color.NRGBA{R: 52, G: 199, B: 89, A: 50},
-	},
-}
-
-// statusToLight maps status to the active light index (0=red, 1=yellow, 2=green).
-// -1 means no active light (idle).
-var statusToLight = map[state.Status]int{
-	state.StatusIdle:           -1,
-	state.StatusRunning:        1, // yellow
-	state.StatusCompleted:      2, // green
-	state.StatusApprovalNeeded: 0, // red
-}
-
-// X positions for the 3 lights, evenly spaced in the 44px icon
-var lightCX = []float64{9, 22, 35}
-
-const lightCY = 22.0
-
-var (
-	once  sync.Once
-	cache map[state.Status][]byte
+// Icon logical size: 56pt wide x 22pt tall (menu bar height)
+// Wider than before to give more spacing between lights
+const (
+	iconW = 56.0
+	iconH = 22.0
 )
 
-// ForStatus returns PNG bytes for the traffic signal icon in the given status.
-func ForStatus(s state.Status) []byte {
-	once.Do(func() {
-		cache = make(map[state.Status][]byte)
-		for _, st := range []state.Status{
-			state.StatusIdle,
-			state.StatusRunning,
-			state.StatusCompleted,
-			state.StatusApprovalNeeded,
-		} {
-			cache[st] = renderSignal(statusToLight[st])
-		}
-	})
-	return cache[s]
+// Housing geometry
+var housingRect = foundation.Rect{
+	Origin: foundation.Point{X: 0, Y: 0},
+	Size:   foundation.Size{Width: iconW, Height: iconH},
 }
 
-func renderSignal(activeIdx int) []byte {
-	img := image.NewNRGBA(image.Rect(0, 0, size, size))
-
-	// Dark rounded rect housing (the signal body)
-	drawRoundedRect(img, 1, 6, 42, 32, 8, color.NRGBA{R: 70, G: 70, B: 75, A: 80})  // border
-	drawRoundedRect(img, 2, 7, 40, 30, 7, color.NRGBA{R: 25, G: 25, B: 28, A: 240}) // fill
-
-	for i, light := range lights {
-		cx := lightCX[i]
-		isActive := (i == activeIdx)
-
-		if isActive {
-			// Glow halo
-			drawCircle(img, cx, lightCY, 9, light.glow)
-			drawCircle(img, cx, lightCY, 7, color.NRGBA{R: light.on.R, G: light.on.G, B: light.on.B, A: 80})
-			// Main lit circle
-			drawCircle(img, cx, lightCY, 5.5, light.on)
-			// Bright center highlight
-			drawCircle(img, cx-0.5, lightCY-0.5, 2.5, color.NRGBA{
-				R: minU8(light.on.R+90, 255),
-				G: minU8(light.on.G+90, 255),
-				B: minU8(light.on.B+90, 255),
-				A: 150,
-			})
-		} else {
-			// Dim/unlit circle
-			drawCircle(img, cx, lightCY, 5.5, light.off)
-			// Very subtle color rim so you can tell which light is which even when off
-			drawCircle(img, cx, lightCY, 5.5, color.NRGBA{R: light.on.R, G: light.on.G, B: light.on.B, A: 20})
-		}
-	}
-
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, img); err != nil {
-		panic("icons: failed to encode PNG: " + err.Error())
-	}
-	return buf.Bytes()
+// Light center positions (left=red, center=yellow, right=green)
+var lightCenters = []foundation.Point{
+	{X: 10, Y: 11}, // Red
+	{X: 28, Y: 11}, // Yellow
+	{X: 46, Y: 11}, // Green
 }
 
-// --- Drawing primitives ---
+const lightRadius = 6.0
+const housingRadius = 5.0
 
-func drawRoundedRect(img *image.NRGBA, x, y, w, h, r float64, c color.NRGBA) {
-	for dy := 0.0; dy < h; dy++ {
-		for dx := 0.0; dx < w; dx++ {
-			px := int(x + dx)
-			py := int(y + dy)
-			if px < 0 || py < 0 || px >= size || py >= size {
-				continue
+// statusToLight maps a state.Status to an active light index (-1 = none active).
+var statusToLight = map[state.Status]int{
+	state.StatusIdle:           -1,
+	state.StatusRunning:        1,
+	state.StatusCompleted:      2,
+	state.StatusApprovalNeeded: 0,
+}
+
+// Light color definitions (RGBA as float64 0-1)
+type lightColors struct {
+	onR, onG, onB    float64 // bright "on" color
+	offR, offG, offB float64 // dim "off" color
+	glowR, glowG, glowB float64 // glow halo color
+}
+
+var lightDefs = []lightColors{
+	{ // Red — approval needed
+		onR: 1.0, onG: 0.231, onB: 0.188,
+		offR: 0.22, offG: 0.10, offB: 0.08,
+		glowR: 1.0, glowG: 0.231, glowB: 0.188,
+	},
+	{ // Yellow — running
+		onR: 1.0, onG: 0.8, onB: 0.0,
+		offR: 0.24, offG: 0.20, offB: 0.05,
+		glowR: 1.0, glowG: 0.8, glowB: 0.0,
+	},
+	{ // Green — completed
+		onR: 0.204, onG: 0.780, onB: 0.349,
+		offR: 0.08, offG: 0.20, offB: 0.12,
+		glowR: 0.204, glowG: 0.780, glowB: 0.349,
+	},
+}
+
+// ForStatus returns an appkit.Image with a traffic-light icon for the given status.
+func ForStatus(s state.Status) appkit.Image {
+	return renderSignal(statusToLight[s], 1.0)
+}
+
+// ForStatusDim returns a dimmed version — used for the blink "off" phase
+// of the approval (red) light. Only dims the active light; housing stays the same.
+func ForStatusDim(s state.Status) appkit.Image {
+	return renderSignal(statusToLight[s], 0.35)
+}
+
+// brightness: 1.0 = full bright, <1.0 = dimmed active light
+func renderSignal(activeIdx int, brightness float64) appkit.Image {
+	img := appkit.Image_ImageWithSizeFlippedDrawingHandler(foundation.Size{
+		Width:  iconW,
+		Height: iconH,
+	}, false, func(rect foundation.Rect) bool {
+		// 1. Draw dark rounded-rect housing
+		housing := appkit.BezierPath_BezierPathWithRoundedRectXRadiusYRadius(housingRect, housingRadius, housingRadius)
+		appkit.Color_ColorWithCalibratedRedGreenBlueAlpha(0.12, 0.12, 0.14, 0.92).SetFill()
+		housing.Fill()
+
+		// 2. Draw each light
+		for i, colors := range lightDefs {
+			center := lightCenters[i]
+			circleRect := foundation.Rect{
+				Origin: foundation.Point{X: center.X - lightRadius, Y: center.Y - lightRadius},
+				Size:   foundation.Size{Width: lightRadius * 2, Height: lightRadius * 2},
 			}
-			if isInRoundedRect(dx, dy, w, h, r) {
-				blendPixel(img, px, py, c)
-			}
-		}
-	}
-}
 
-func isInRoundedRect(x, y, w, h, r float64) bool {
-	if x < r && y < r {
-		return dist(x, y, r, r) <= r
-	}
-	if x > w-r && y < r {
-		return dist(x, y, w-r, r) <= r
-	}
-	if x < r && y > h-r {
-		return dist(x, y, r, h-r) <= r
-	}
-	if x > w-r && y > h-r {
-		return dist(x, y, w-r, h-r) <= r
-	}
-	return true
-}
-
-func dist(x1, y1, x2, y2 float64) float64 {
-	dx := x1 - x2
-	dy := y1 - y2
-	return math.Sqrt(dx*dx + dy*dy)
-}
-
-func drawCircle(img *image.NRGBA, cx, cy, r float64, c color.NRGBA) {
-	for dy := -int(r) - 1; dy <= int(r)+1; dy++ {
-		for dx := -int(r) - 1; dx <= int(r)+1; dx++ {
-			px := int(cx) + dx
-			py := int(cy) + dy
-			if px < 0 || py < 0 || px >= size || py >= size {
-				continue
-			}
-			d := dist(float64(dx), float64(dy), 0, 0)
-			if d <= r {
-				aSrc := float64(c.A) / 255.0
-				// Anti-alias edge
-				if d > r-1.5 {
-					aSrc *= (r - d + 1.5) / 1.5
-					if aSrc < 0 {
-						aSrc = 0
-					}
+			if i == activeIdx {
+				// Outer glow halo (scaled by brightness)
+				glowRect := foundation.Rect{
+					Origin: foundation.Point{X: center.X - lightRadius - 3, Y: center.Y - lightRadius - 3},
+					Size:   foundation.Size{Width: (lightRadius + 3) * 2, Height: (lightRadius + 3) * 2},
 				}
-				blendPixel(img, px, py, color.NRGBA{R: c.R, G: c.G, B: c.B, A: uint8(aSrc * 255)})
+				glowPath := appkit.BezierPath_BezierPathWithOvalInRect(glowRect)
+				appkit.Color_ColorWithCalibratedRedGreenBlueAlpha(colors.glowR, colors.glowG, colors.glowB, 0.25*brightness).SetFill()
+				glowPath.Fill()
+
+				// Main circle (brightness scaled)
+				mainPath := appkit.BezierPath_BezierPathWithOvalInRect(circleRect)
+				// Blend between on-color and off-color based on brightness
+				r := colors.offR + (colors.onR-colors.offR)*brightness
+				g := colors.offG + (colors.onG-colors.offG)*brightness
+				b := colors.offB + (colors.onB-colors.offB)*brightness
+				appkit.Color_ColorWithCalibratedRedGreenBlueAlpha(r, g, b, 0.85+0.15*brightness).SetFill()
+				mainPath.Fill()
+
+				// Bright center highlight (only visible at high brightness)
+				if brightness > 0.7 {
+					highlightR := lightRadius * 0.35
+					highlightRect := foundation.Rect{
+						Origin: foundation.Point{X: center.X - highlightR - 1, Y: center.Y - highlightR - 1},
+						Size:   foundation.Size{Width: highlightR * 2, Height: highlightR * 2},
+					}
+					highlightPath := appkit.BezierPath_BezierPathWithOvalInRect(highlightRect)
+					appkit.Color_ColorWithCalibratedRedGreenBlueAlpha(
+						min1(colors.onR+0.35),
+						min1(colors.onG+0.35),
+						min1(colors.onB+0.35),
+						0.55*brightness,
+					).SetFill()
+					highlightPath.Fill()
+				}
+			} else {
+				// Dim circle
+				dimPath := appkit.BezierPath_BezierPathWithOvalInRect(circleRect)
+				appkit.Color_ColorWithCalibratedRedGreenBlueAlpha(colors.offR, colors.offG, colors.offB, 0.85).SetFill()
+				dimPath.Fill()
+
+				// Subtle color tint edge
+				appkit.Color_ColorWithCalibratedRedGreenBlueAlpha(colors.onR, colors.onG, colors.onB, 0.15).SetStroke()
+				dimPath.SetLineWidth(1.0)
+				dimPath.Stroke()
 			}
 		}
-	}
-}
-
-func blendPixel(img *image.NRGBA, x, y int, c color.NRGBA) {
-	if x < 0 || x >= size || y < 0 || y >= size {
-		return
-	}
-	bg := img.NRGBAAt(x, y)
-	aSrc := float64(c.A) / 255.0
-	aDst := 1.0 - aSrc
-	img.SetNRGBA(x, y, color.NRGBA{
-		R: uint8(float64(c.R)*aSrc + float64(bg.R)*aDst),
-		G: uint8(float64(c.G)*aSrc + float64(bg.G)*aDst),
-		B: uint8(float64(c.B)*aSrc + float64(bg.B)*aDst),
-		A: uint8((aSrc + float64(bg.A)/255.0*aDst) * 255),
+		return true
 	})
+
+	img.SetTemplate(false)
+	return img
 }
 
-func minU8(a, b uint8) uint8 {
-	if a < b {
-		return a
+func min1(v float64) float64 {
+	if v > 1.0 {
+		return 1.0
 	}
-	return b
+	return v
 }
