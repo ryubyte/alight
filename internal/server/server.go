@@ -12,7 +12,7 @@ import (
 // UpdateRequest represents the JSON body for POST /update.
 type UpdateRequest struct {
 	Status    string `json:"status"`
-	EventName string `json:"event_name"`
+	EventName string `json:"event"`
 	SessionID string `json:"session_id"`
 	ToolName  string `json:"tool_name"`
 }

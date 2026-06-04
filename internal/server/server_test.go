@@ -19,7 +19,7 @@ func newTestServer() (*Server, *state.Machine) {
 func TestPostUpdate_ChangesStatus(t *testing.T) {
 	s, _ := newTestServer()
 
-	body := `{"status":"running","event_name":"SessionStart","session_id":"sess-1"}`
+	body := `{"status":"running","event":"SessionStart","session_id":"sess-1"}`
 	req := httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -38,7 +38,7 @@ func TestPostUpdate_DeriveStatusFromEvent(t *testing.T) {
 	s, m := newTestServer()
 
 	// Don't pass status; TransitionFromHook("PermissionRequest") -> StatusApprovalNeeded
-	body := `{"event_name":"PermissionRequest","session_id":"sess-2"}`
+	body := `{"event":"PermissionRequest","session_id":"sess-2"}`
 	req := httptest.NewRequest(http.MethodPost, "/update", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
