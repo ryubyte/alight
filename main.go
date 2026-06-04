@@ -21,7 +21,8 @@ func main() {
 	// Register OnChange callback to update systray icon and tooltip
 	machine.OnChange(func(old, new state.Status, event state.Event) {
 		systray.SetIcon(icons.ForStatus(new))
-		systray.SetTooltip("Codex: " + statusLabel(new))
+		label := statusLabel(new)
+		systray.SetTooltip("Codex Bar 🚥 " + label)
 	})
 
 	srv := server.New(machine, defaultAddr)
@@ -38,9 +39,9 @@ func main() {
 func onReady(machine *state.Machine) func() {
 	return func() {
 		systray.SetIcon(icons.ForStatus(state.StatusIdle))
-		systray.SetTooltip("Codex: 空闲")
+		systray.SetTooltip("Codex Bar 🚥 ⚫ 空闲")
 
-		mStatus := systray.AddMenuItem("状态: 空闲", "当前状态")
+		mStatus := systray.AddMenuItem("🚥 ⚫ 空闲", "当前状态")
 		mStatus.Disable()
 
 		systray.AddSeparator()
@@ -54,7 +55,7 @@ func onReady(machine *state.Machine) func() {
 
 		// Register OnChange to update mStatus title
 		machine.OnChange(func(old, new state.Status, event state.Event) {
-			mStatus.SetTitle("状态: " + statusLabel(new))
+			mStatus.SetTitle("🚥 " + statusLabel(new))
 		})
 
 		// Handle menu clicks
@@ -90,13 +91,13 @@ func onExit() {
 func statusLabel(s state.Status) string {
 	switch s {
 	case state.StatusIdle:
-		return "空闲"
+		return "⚫ 空闲"
 	case state.StatusRunning:
-		return "运行中"
+		return "🟡 运行中"
 	case state.StatusCompleted:
-		return "已完成"
+		return "🟢 已完成"
 	case state.StatusApprovalNeeded:
-		return "需要审批"
+		return "🔴 需要审批"
 	default:
 		return string(s)
 	}
