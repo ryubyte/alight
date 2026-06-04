@@ -39,6 +39,16 @@ func (a *Adapter) Name() string {
 	return "codex"
 }
 
+// IsInstalled returns true if the Codex CLI config file exists.
+func (a *Adapter) IsInstalled() bool {
+	path, err := ConfigPathFn()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(path)
+	return err == nil
+}
+
 // Inject adds hook entries for all Codex events that POST to the given serverAddr.
 // If Codex CLI is not installed (config.toml does not exist), it skips silently.
 func (a *Adapter) Inject(port string) error {

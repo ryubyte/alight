@@ -10,13 +10,15 @@ import (
 )
 
 type mockAdapter struct {
-	name    string
-	inject  func(port string) error
-	cleanup func() error
-	mapping map[string]state.Status
+	name       string
+	inject     func(port string) error
+	cleanup    func() error
+	mapping    map[string]state.Status
+	installed  bool
 }
 
 func (m *mockAdapter) Name() string                          { return m.name }
+func (m *mockAdapter) IsInstalled() bool                     { return m.installed }
 func (m *mockAdapter) Inject(port string) error               { return m.inject(port) }
 func (m *mockAdapter) Cleanup() error                         { return m.cleanup() }
 func (m *mockAdapter) MapEvent(eventName string) state.Status {
@@ -170,5 +172,16 @@ func TestStatusLabel(t *testing.T) {
 		if got != tt.expected {
 			t.Errorf("StatusLabel(%s) = %s, want %s", tt.status, got, tt.expected)
 		}
+	}
+}
+
+func TestRegistry_InstalledAdapters(t *testing.T) {
+	r := core.NewRegistry()
+	r.Register(&mockAdapter{name: "installed_tool", installed: true, mapping: map[string]state.Status{}})
+	r.Register(&mockAdapter{name: "not_installed_tool", installed: false, mapping: map[string]state.Status{}})
+
+	names := r.InstalledAdapters()
+	if len(names) != 1 || names[0] != "installed_tool" {
+		t.Fatalf("expected only [installed_tool], got %v", names)
 	}
 }

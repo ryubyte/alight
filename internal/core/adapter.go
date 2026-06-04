@@ -16,6 +16,9 @@ type Adapter interface {
 	// Name returns a unique identifier for the adapter (e.g. "codex", "claude").
 	Name() string
 
+	// IsInstalled returns true if the tool's config file exists on this machine.
+	IsInstalled() bool
+
 	// Inject adds hooks for this tool, pointing to the given port.
 	Inject(port string) error
 
@@ -99,6 +102,19 @@ func (r *Registry) AdapterNames() []string {
 	names := make([]string, 0, len(r.adapters))
 	for name := range r.adapters {
 		names = append(names, name)
+	}
+	return names
+}
+
+// InstalledAdapters returns the names of adapters whose tools are installed.
+func (r *Registry) InstalledAdapters() []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	names := make([]string, 0, len(r.adapters))
+	for _, a := range r.adapters {
+		if a.IsInstalled() {
+			names = append(names, a.Name())
+		}
 	}
 	return names
 }

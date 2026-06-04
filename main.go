@@ -67,17 +67,16 @@ func didLaunch(app appkit.Application, delegate *appkit.ApplicationDelegate) {
 	objc.Retain(&item)
 	btn := item.Button()
 	btn.SetImage(icons.ForStatus(machine.Current()))
-	btn.SetToolTip("Codex Bar ⚫ 空闲")
+	btn.SetToolTip("Codex Bar idle")
 
 	// Blink controller
 	blink := ui.NewBlinkController(btn, machine)
 
 	// Build menu
 	menu := ui.BuildMenu(ui.MenuConfig{
-		Machine:    machine,
-		ServerAddr: serverAddr,
-		Port:       port,
-		Blink:      blink,
+		Machine:  machine,
+		Registry: registry,
+		Blink:    blink,
 		OnQuit: func() {
 			registry.CleanupAll()
 			app.Terminate(nil)

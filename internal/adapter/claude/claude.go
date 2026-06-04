@@ -36,6 +36,16 @@ func (a *Adapter) Name() string {
 	return "claude"
 }
 
+// IsInstalled returns true if the Claude Code settings file exists.
+func (a *Adapter) IsInstalled() bool {
+	path, err := SettingsPathFn()
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(path)
+	return err == nil
+}
+
 // Inject adds hook entries for Claude Code events that POST to the given port.
 // If Claude Code is not installed (settings.json does not exist), it skips silently.
 func (a *Adapter) Inject(port string) error {

@@ -4,12 +4,11 @@ package ui
 
 import (
 	"fmt"
-	"time"
+	"strings"
 
 	"github.com/progrium/darwinkit/helper/action"
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/progrium/darwinkit/objc"
-	"github.com/ryubyte/codex-bar/internal/hookgen"
 	"github.com/ryubyte/codex-bar/internal/icons"
 	"github.com/ryubyte/codex-bar/internal/core/state"
 )
@@ -21,11 +20,15 @@ const (
 
 // MenuConfig holds the dependencies needed to build the menu.
 type MenuConfig struct {
-	Machine    *state.Machine
-	ServerAddr string
-	Port       int
-	Blink      *BlinkController
-	OnQuit     func()
+	Machine           *state.Machine
+	Registry          InstalledLister
+	Blink             *BlinkController
+	OnQuit            func()
+}
+
+// InstalledLister provides the list of adapters that have hooks injected.
+type InstalledLister interface {
+	InstalledAdapters() []string
 }
 
 // BuildMenu constructs the status bar menu and registers the OnChange callback.
@@ -40,22 +43,18 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 
 	menu.AddItem(appkit.MenuItem_SeparatorItem())
 
-	mHooks := appkit.NewMenuItemWithTitleActionKeyEquivalent(
-		fmt.Sprintf("Hooks 配置 ✓ 已注入 :%d", cfg.Port), objc.Selector{}, "",
-	)
-	action.Set(mHooks, func(sender objc.Object) {
-		hcfg := hookgen.Config{ServerAddr: cfg.ServerAddr}
-		toml := hookgen.Generate(hcfg)
-		CopyToClipboard(toml)
-		mHooks.SetTitle("Hooks 配置 ✓ 已复制到剪贴板")
-		go func() {
-			time.Sleep(2 * time.Second)
-			mHooks.SetTitle(fmt.Sprintf("Hooks 配置 ✓ 已注入 :%d", cfg.Port))
-		}()
-	})
-	menu.AddItem(mHooks)
+	// Show injected adapter list
+	for _, name := range cfg.Registry.InstalledAdapters() {
+		mAdapter := appkit.NewMenuItemWithTitleActionKeyEquivalent(
+			fmt.Sprintf("✓ %s", name), objc.Selector{}, "",
+		)
+		mAdapter.SetEnabled(false)
+		menu.AddItem(mAdapter)
+	}
 
-	mReset := appkit.NewMenuItemWithTitleActionKeyEquivalent("重置为空闲", objc.Selector{}, "")
+	menu.AddItem(appkit.MenuItem_SeparatorItem())
+
+	mReset := appkit.NewMenuItemWithTitleActionKeyEquivalent("Reset", objc.Selector{}, "")
 	action.Set(mReset, func(sender objc.Object) {
 		cfg.Machine.Update(state.Event{
 			Status:    state.StatusIdle,
@@ -64,9 +63,7 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 	})
 	menu.AddItem(mReset)
 
-	menu.AddItem(appkit.MenuItem_SeparatorItem())
-
-	mSound := appkit.NewMenuItemWithTitleActionKeyEquivalent("声音", objc.Selector{}, "")
+	mSound := appkit.NewMenuItemWithTitleActionKeyEquivalent("Sound", objc.Selector{}, "")
 	mSound.SetState(appkit.ControlStateValueOn)
 	action.Set(mSound, func(sender objc.Object) {
 		soundOn = !soundOn
@@ -78,7 +75,7 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 	})
 	menu.AddItem(mSound)
 
-	mQuit := appkit.NewMenuItemWithTitleActionKeyEquivalent("退出", objc.Selector{}, "")
+	mQuit := appkit.NewMenuItemWithTitleActionKeyEquivalent("Quit", objc.Selector{}, "")
 	action.Set(mQuit, func(sender objc.Object) {
 		cfg.Blink.Stop()
 		cfg.OnQuit()
@@ -92,7 +89,11 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 		}
 
 		cfg.Blink.Btn.SetImage(icons.ForStatus(newStatus))
-		cfg.Blink.Btn.SetToolTip("Codex Bar " + StatusLabel(newStatus))
+		tooltip := "Codex Bar " + StatusLabel(newStatus)
+		if names := cfg.Registry.InstalledAdapters(); len(names) > 0 {
+			tooltip += " [" + strings.Join(names, ", ") + "]"
+		}
+		cfg.Blink.Btn.SetToolTip(tooltip)
 		mStatus.SetTitle(StatusLabel(newStatus))
 
 		if soundOn {
