@@ -40,8 +40,18 @@ func (a *Adapter) Name() string {
 }
 
 // Inject adds hook entries for all Codex events that POST to the given serverAddr.
-// It cleans up any existing codex-bar entries first, then adds fresh ones.
+// If Codex CLI is not installed (config.toml does not exist), it skips silently.
 func (a *Adapter) Inject(port string) error {
+	path, err := ConfigPathFn()
+	if err != nil {
+		return fmt.Errorf("codex: get config path: %w", err)
+	}
+
+	// Skip if Codex CLI is not installed
+	if _, err := os.Stat(path); err != nil {
+		return nil
+	}
+
 	cfg, err := Read()
 	if err != nil {
 		return fmt.Errorf("codex: read config: %w", err)
@@ -52,7 +62,18 @@ func (a *Adapter) Inject(port string) error {
 }
 
 // Cleanup removes all codex-bar injected hooks from the config.
+// If Codex CLI is not installed (config.toml does not exist), it skips silently.
 func (a *Adapter) Cleanup() error {
+	path, err := ConfigPathFn()
+	if err != nil {
+		return fmt.Errorf("codex: get config path: %w", err)
+	}
+
+	// Skip if config doesn't exist
+	if _, err := os.Stat(path); err != nil {
+		return nil
+	}
+
 	cfg, err := Read()
 	if err != nil {
 		return fmt.Errorf("codex: read config for cleanup: %w", err)
@@ -122,6 +143,9 @@ func containsCodexBarURL(cmd string) bool {
 }
 
 func cleanupHooks(cfg CodexConfig) CodexConfig {
+	if cfg == nil {
+		return cfg
+	}
 	hooksRaw, ok := cfg["hooks"]
 	if !ok {
 		return cfg
@@ -198,6 +222,9 @@ var codexEvents = []string{
 }
 
 func injectHooks(cfg CodexConfig, serverAddr string) CodexConfig {
+	if cfg == nil {
+		cfg = CodexConfig{}
+	}
 	cfg = cleanupHooks(cfg)
 
 	hooksRaw, ok := cfg["hooks"]

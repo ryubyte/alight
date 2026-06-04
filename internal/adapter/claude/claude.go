@@ -37,8 +37,18 @@ func (a *Adapter) Name() string {
 }
 
 // Inject adds hook entries for Claude Code events that POST to the given port.
-// It cleans up any existing codex-bar entries first, then adds fresh ones.
+// If Claude Code is not installed (settings.json does not exist), it skips silently.
 func (a *Adapter) Inject(port string) error {
+	path, err := SettingsPathFn()
+	if err != nil {
+		return fmt.Errorf("claude: get settings path: %w", err)
+	}
+
+	// Skip if Claude Code is not installed
+	if _, err := os.Stat(path); err != nil {
+		return nil
+	}
+
 	settings, err := Read()
 	if err != nil {
 		return fmt.Errorf("claude: read settings: %w", err)
@@ -48,7 +58,18 @@ func (a *Adapter) Inject(port string) error {
 }
 
 // Cleanup removes all codex-bar injected hooks from the settings.
+// If Claude Code is not installed (settings.json does not exist), it skips silently.
 func (a *Adapter) Cleanup() error {
+	path, err := SettingsPathFn()
+	if err != nil {
+		return fmt.Errorf("claude: get settings path: %w", err)
+	}
+
+	// Skip if settings doesn't exist
+	if _, err := os.Stat(path); err != nil {
+		return nil
+	}
+
 	settings, err := Read()
 	if err != nil {
 		return fmt.Errorf("claude: read settings for cleanup: %w", err)

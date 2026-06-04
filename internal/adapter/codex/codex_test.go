@@ -15,11 +15,44 @@ func tmpConfigPath(t *testing.T) string {
 	return filepath.Join(dir, ".codex", "config.toml")
 }
 
+func TestInject_SkipsIfNotInstalled(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nonexistent", "config.toml")
+	orig := adapter.ConfigPathFn
+	adapter.ConfigPathFn = func() (string, error) { return path, nil }
+	defer func() { adapter.ConfigPathFn = orig }()
+
+	a := adapter.New()
+	if err := a.Inject("9876"); err != nil {
+		t.Fatalf("should skip silently, got: %v", err)
+	}
+
+	// File should not be created
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("config file should not be created when tool is not installed")
+	}
+}
+
+func TestCleanup_SkipsIfNotInstalled(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nonexistent", "config.toml")
+	orig := adapter.ConfigPathFn
+	adapter.ConfigPathFn = func() (string, error) { return path, nil }
+	defer func() { adapter.ConfigPathFn = orig }()
+
+	a := adapter.New()
+	if err := a.Cleanup(); err != nil {
+		t.Fatalf("should skip silently, got: %v", err)
+	}
+}
+
 func TestInject(t *testing.T) {
 	path := tmpConfigPath(t)
 	orig := adapter.ConfigPathFn
 	adapter.ConfigPathFn = func() (string, error) { return path, nil }
 	defer func() { adapter.ConfigPathFn = orig }()
+
+	// Create an empty config file first (tool is installed)
+	os.MkdirAll(filepath.Dir(path), 0755)
+	os.WriteFile(path, []byte(""), 0644)
 
 	a := adapter.New()
 	if err := a.Inject("9876"); err != nil {

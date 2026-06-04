@@ -15,11 +15,44 @@ func tmpSettingsPath(t *testing.T) string {
 	return filepath.Join(dir, "settings.json")
 }
 
+func TestInject_SkipsIfNotInstalled(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nonexistent", "settings.json")
+	orig := adapter.SettingsPathFn
+	adapter.SettingsPathFn = func() (string, error) { return path, nil }
+	defer func() { adapter.SettingsPathFn = orig }()
+
+	a := adapter.New()
+	if err := a.Inject("9876"); err != nil {
+		t.Fatalf("should skip silently, got: %v", err)
+	}
+
+	// File should not be created
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("settings file should not be created when tool is not installed")
+	}
+}
+
+func TestCleanup_SkipsIfNotInstalled(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "nonexistent", "settings.json")
+	orig := adapter.SettingsPathFn
+	adapter.SettingsPathFn = func() (string, error) { return path, nil }
+	defer func() { adapter.SettingsPathFn = orig }()
+
+	a := adapter.New()
+	if err := a.Cleanup(); err != nil {
+		t.Fatalf("should skip silently, got: %v", err)
+	}
+}
+
 func TestInject(t *testing.T) {
 	path := tmpSettingsPath(t)
 	orig := adapter.SettingsPathFn
 	adapter.SettingsPathFn = func() (string, error) { return path, nil }
 	defer func() { adapter.SettingsPathFn = orig }()
+
+	// Create an empty settings file first (tool is installed)
+	os.MkdirAll(filepath.Dir(path), 0755)
+	os.WriteFile(path, []byte("{}"), 0644)
 
 	a := adapter.New()
 	if err := a.Inject("9876"); err != nil {
