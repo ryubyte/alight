@@ -189,6 +189,7 @@ func Cleanup() error {
 // events to inject hooks for.
 var events = []string{
 	"SessionStart",
+	"UserPromptSubmit",
 	"Stop",
 	"StopFailure",
 	"PermissionRequest",
