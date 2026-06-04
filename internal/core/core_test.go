@@ -3,10 +3,10 @@ package core_test
 import (
 	"testing"
 
-	"github.com/ryubyte/codex-bar/internal/adapter/claude"
-	"github.com/ryubyte/codex-bar/internal/adapter/codex"
-	"github.com/ryubyte/codex-bar/internal/core"
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/adapter/claude"
+	"github.com/ryubyte/aglight/internal/adapter/codex"
+	"github.com/ryubyte/aglight/internal/core"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 type mockAdapter struct {

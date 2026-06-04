@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/pelletier/go-toml/v2"
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 // ConfigPathFn returns the path to Codex CLI config.toml.
@@ -71,7 +71,7 @@ func (a *Adapter) Inject(port string) error {
 	return Write(cfg)
 }
 
-// Cleanup removes all codex-bar injected hooks from the config.
+// Cleanup removes all aglight injected hooks from the config.
 // If Codex CLI is not installed (config.toml does not exist), it skips silently.
 func (a *Adapter) Cleanup() error {
 	path, err := ConfigPathFn()
@@ -147,9 +147,9 @@ func Write(cfg CodexConfig) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// containsCodexBarURL checks if a command string was injected by codex-bar.
-func containsCodexBarURL(cmd string) bool {
-	return strings.Contains(cmd, "source=codex-bar")
+// containsAglightURL checks if a command string was injected by aglight.
+func containsAglightURL(cmd string) bool {
+	return strings.Contains(cmd, "source=aglight")
 }
 
 func cleanupHooks(cfg CodexConfig) CodexConfig {
@@ -193,7 +193,7 @@ func cleanupHooks(cfg CodexConfig) CodexConfig {
 					continue
 				}
 				cmd, _ := hm["command"].(string)
-				if !containsCodexBarURL(cmd) {
+				if !containsAglightURL(cmd) {
 					cleanHooks = append(cleanHooks, h)
 				}
 			}
@@ -253,7 +253,7 @@ func injectHooks(cfg CodexConfig, serverAddr string) CodexConfig {
 			"hooks": []interface{}{
 				map[string]interface{}{
 					"type":    "command",
-					"command": fmt.Sprintf("curl -s -X POST 'http://%s/update?source=codex-bar' -d '{\"event\":\"%s\"}'", serverAddr, event),
+					"command": fmt.Sprintf("curl -s -X POST 'http://%s/update?source=aglight' -d '{\"event\":\"%s\"}'", serverAddr, event),
 					"async":   true,
 				},
 			},

@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	adapter "github.com/ryubyte/codex-bar/internal/adapter/claude"
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	adapter "github.com/ryubyte/aglight/internal/adapter/claude"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 func tmpSettingsPath(t *testing.T) string {

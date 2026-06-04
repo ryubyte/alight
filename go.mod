@@ -1,4 +1,4 @@
-module github.com/ryubyte/codex-bar
+module github.com/ryubyte/aglight
 
 go 1.23.2
 

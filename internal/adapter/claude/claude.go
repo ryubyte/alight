@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 // SettingsPathFn returns the path to Claude Code settings.json.
@@ -67,7 +67,7 @@ func (a *Adapter) Inject(port string) error {
 	return Write(settings)
 }
 
-// Cleanup removes all codex-bar injected hooks from the settings.
+// Cleanup removes all aglight injected hooks from the settings.
 // If Claude Code is not installed (settings.json does not exist), it skips silently.
 func (a *Adapter) Cleanup() error {
 	path, err := SettingsPathFn()
@@ -142,10 +142,10 @@ func Write(settings map[string]interface{}) error {
 	return os.WriteFile(path, data, 0644)
 }
 
-// isCodexBarHook checks if a hook entry was injected by codex-bar.
-func isCodexBarHook(hook map[string]interface{}) bool {
+// isAglightHook checks if a hook entry was injected by aglight.
+func isAglightHook(hook map[string]interface{}) bool {
 	cmd, _ := hook["command"].(string)
-	return strings.Contains(cmd, "source=codex-bar")
+	return strings.Contains(cmd, "source=aglight")
 }
 
 func cleanupHooks(settings map[string]interface{}) map[string]interface{} {
@@ -181,7 +181,7 @@ func cleanupHooks(settings map[string]interface{}) map[string]interface{} {
 			var cleanHooks []interface{}
 			for _, h := range hooksList {
 				hm, ok := h.(map[string]interface{})
-				if !ok || !isCodexBarHook(hm) {
+				if !ok || !isAglightHook(hm) {
 					cleanHooks = append(cleanHooks, h)
 				}
 			}
@@ -231,7 +231,7 @@ func injectHooks(settings map[string]interface{}, port string) map[string]interf
 	for _, event := range claudeEvents {
 		hook := map[string]interface{}{
 			"type":    "command",
-			"command": fmt.Sprintf("curl -s -X POST 'http://localhost:%s/update?source=codex-bar' -d '{\"event\":\"%s\"}'", port, event),
+			"command": fmt.Sprintf("curl -s -X POST 'http://localhost:%s/update?source=aglight' -d '{\"event\":\"%s\"}'", port, event),
 			"timeout": 5,
 		}
 

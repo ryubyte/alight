@@ -1,16 +1,16 @@
 .PHONY: build run test clean install
 
 build:
-	go build -o codex-bar .
+	go build -o aglight .
 
 run: build
-	./codex-bar
+	./aglight
 
 test:
 	go test ./... -v
 
 clean:
-	rm -f codex-bar
+	rm -f aglight
 
 install: build
-	cp codex-bar /usr/local/bin/
+	cp aglight /usr/local/bin/

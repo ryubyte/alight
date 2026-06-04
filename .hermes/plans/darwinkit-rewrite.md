@@ -1,4 +1,4 @@
-# Codex Bar darwinkit 重构计划
+# AgLight darwinkit 重构计划
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
@@ -20,7 +20,7 @@
 
 **Step 1:** 移除 systray 依赖
 ```bash
-cd /Users/xiongshengyao/workspace/github.com/ryubyte/codex-bar
+cd /Users/xiongshengyao/workspace/github.com/ryubyte/aglight
 go get github.com/getlantern/systray@none
 ```
 
@@ -71,7 +71,7 @@ package icons
 import (
     "github.com/progrium/darwinkit/macos/appkit"
     "github.com/progrium/darwinkit/macos/foundation"
-    "github.com/ryubyte/codex-bar/internal/state"
+    "github.com/ryubyte/aglight/internal/state"
 )
 
 const (
@@ -230,10 +230,10 @@ import (
     "github.com/progrium/darwinkit/macos/foundation"
     "github.com/progrium/darwinkit/objc"
 
-    "github.com/ryubyte/codex-bar/internal/hookgen"
-    "github.com/ryubyte/codex-bar/internal/icons"
-    "github.com/ryubyte/codex-bar/internal/server"
-    "github.com/ryubyte/codex-bar/internal/state"
+    "github.com/ryubyte/aglight/internal/hookgen"
+    "github.com/ryubyte/aglight/internal/icons"
+    "github.com/ryubyte/aglight/internal/server"
+    "github.com/ryubyte/aglight/internal/state"
 )
 
 const defaultAddr = "localhost:9876"
@@ -248,7 +248,7 @@ func launched(app appkit.Application, delegate *appkit.ApplicationDelegate) {
     item := appkit.StatusBar_SystemStatusBar().StatusItemWithLength(appkit.VariableStatusItemLength)
     objc.Retain(&item)
     item.Button().SetImage(icons.ForStatus(state.StatusIdle))
-    item.Button().SetToolTip("Codex Bar 🚥 ⚫ 空闲")
+    item.Button().SetToolTip("AgLight 🚥 ⚫ 空闲")
 
     // State machine + HTTP server
     machine := state.NewMachine()
@@ -258,11 +258,11 @@ func launched(app appkit.Application, delegate *appkit.ApplicationDelegate) {
     // Status change callback
     machine.OnChange(func(old, new state.Status, event state.Event) {
         item.Button().SetImage(icons.ForStatus(new))
-        item.Button().SetToolTip("Codex Bar 🚥 " + statusLabel(new))
+        item.Button().SetToolTip("AgLight 🚥 " + statusLabel(new))
     })
 
     // Menu
-    menu := appkit.NewMenuWithTitle("Codex Bar")
+    menu := appkit.NewMenuWithTitle("AgLight")
     mStatus := appkit.NewMenuItemWithTitleActionKeyEquivalent(statusLabel(state.StatusIdle), objc.Selector{}, "")
     mStatus.SetEnabled(false)
     menu.AddItem(mStatus)
@@ -304,7 +304,7 @@ func launched(app appkit.Application, delegate *appkit.ApplicationDelegate) {
 
 **Step 2:** 编译验证
 ```bash
-go build -o codex-bar .
+go build -o aglight .
 ```
 
 **Step 3:** Commit
@@ -330,7 +330,7 @@ package icons
 
 import (
     "testing"
-    "github.com/ryubyte/codex-bar/internal/state"
+    "github.com/ryubyte/aglight/internal/state"
 )
 
 func TestForStatus_ReturnsNonNilImage(t *testing.T) {
@@ -358,7 +358,7 @@ go mod tidy
 **Step 3:** 全量编译测试
 ```bash
 go test ./internal/state/ ./internal/server/ ./internal/hookgen/ -v
-go build -o codex-bar .
+go build -o aglight .
 ```
 
 **Step 4:** Commit
@@ -374,7 +374,7 @@ git add -A && git commit -m "chore: cleanup old systray code, update tests"
 
 **Step 1:** 启动应用
 ```bash
-./codex-bar &
+./aglight &
 sleep 3
 ```
 

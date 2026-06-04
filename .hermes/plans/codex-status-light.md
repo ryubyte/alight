@@ -13,7 +13,7 @@
 ## 项目结构
 
 ```
-codex-bar/
+aglight/
 ├── main.go                  # 入口，启动 systray + HTTP server
 ├── internal/
 │   ├── state/
@@ -51,8 +51,8 @@ codex-bar/
 **Step 1: 初始化 Go module**
 
 ```bash
-cd /Users/xiongshengyao/workspace/github.com/ryubyte/codex-bar
-go mod init github.com/ryubyte/codex-bar
+cd /Users/xiongshengyao/workspace/github.com/ryubyte/aglight
+go mod init github.com/ryubyte/aglight
 ```
 
 **Step 2: 创建目录结构**
@@ -321,7 +321,7 @@ import (
 	_ "embed"
 	"sync"
 
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/aglight/internal/state"
 )
 
 const size = 22
@@ -380,7 +380,7 @@ package icons
 import (
 	"testing"
 
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/aglight/internal/state"
 )
 
 func TestForStatusReturnsPNGData(t *testing.T) {
@@ -438,7 +438,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/aglight/internal/state"
 )
 
 type UpdateRequest struct {
@@ -472,7 +472,7 @@ func (s *Server) ListenAndServe() error {
 	mux.HandleFunc("/update", s.handleUpdate)
 	mux.HandleFunc("/status", s.handleStatus)
 	mux.HandleFunc("/events", s.handleEvents)
-	log.Printf("codex-bar server listening on %s", s.addr)
+	log.Printf("aglight server listening on %s", s.addr)
 	return http.ListenAndServe(s.addr, mux)
 }
 
@@ -582,7 +582,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/aglight/internal/state"
 )
 
 func TestHandleUpdatePost(t *testing.T) {
@@ -722,7 +722,7 @@ func Generate(cfg Config) string {
 		{"SubagentStop", "subagent_stop"},
 	}
 
-	b.WriteString("# Codex Bar - Status Light Hooks\n")
+	b.WriteString("# AgLight - Status Light Hooks\n")
 	b.WriteString("# Add the following to ~/.codex/config.toml\n\n")
 
 	for _, e := range events {
@@ -821,10 +821,10 @@ import (
 	"time"
 
 	"github.com/getlantern/systray"
-	"github.com/ryubyte/codex-bar/internal/hookgen"
-	"github.com/ryubyte/codex-bar/internal/icons"
-	"github.com/ryubyte/codex-bar/internal/server"
-	"github.com/ryubyte/codex-bar/internal/state"
+	"github.com/ryubyte/aglight/internal/hookgen"
+	"github.com/ryubyte/aglight/internal/icons"
+	"github.com/ryubyte/aglight/internal/server"
+	"github.com/ryubyte/aglight/internal/state"
 )
 
 const defaultAddr = "localhost:9876"
@@ -864,7 +864,7 @@ func main() {
 		mReset := systray.AddMenuItem("重置为空闲", "手动重置为空闲状态")
 
 		systray.AddSeparator()
-		mQuit := systray.AddMenuItem("退出", "关闭 Codex Bar")
+		mQuit := systray.AddMenuItem("退出", "关闭 AgLight")
 
 		// Update status menu item on state change
 		machine.OnChange(func(old, new state.Status, event state.Event) {
@@ -889,7 +889,7 @@ func main() {
 			}
 		}()
 	}, func() {
-		log.Println("codex-bar exiting")
+		log.Println("aglight exiting")
 	})
 }
 
@@ -921,10 +921,10 @@ func copyToClipboard(text string) {
 **Step 3: 编译验证**
 
 ```bash
-go build -o codex-bar .
+go build -o aglight .
 ```
 
-Expected: 编译成功，生成 codex-bar 可执行文件
+Expected: 编译成功，生成 aglight 可执行文件
 
 **Step 4: 提交**
 
@@ -948,20 +948,20 @@ git commit -m "feat: implement main entry with systray integration"
 .PHONY: build run test clean hooks
 
 build:
-	go build -o codex-bar .
+	go build -o aglight .
 
 run: build
-	./codex-bar
+	./aglight
 
 test:
 	go test ./... -v
 
 clean:
-	rm -f codex-bar
+	rm -f aglight
 
 hooks:
-	@go run -mod=mod github.com/ryubyte/codex-bar/cmd/hookgen 2>/dev/null || \
-	echo "Run ./codex-bar and click '生成 Hooks 配置' from the tray menu"
+	@go run -mod=mod github.com/ryubyte/aglight/cmd/hookgen 2>/dev/null || \
+	echo "Run ./aglight and click '生成 Hooks 配置' from the tray menu"
 ```
 
 **Step 2: 提交**
@@ -985,7 +985,7 @@ git commit -m "chore: add Makefile with build/run/test targets"
 内容包含：
 1. 项目简介
 2. 安装方式 (`go install` / `make build`)
-3. 使用步骤：启动 codex-bar → 托盘菜单点"生成 Hooks 配置" → 粘贴到 `~/.codex/config.toml` → 启动 codex
+3. 使用步骤：启动 aglight → 托盘菜单点"生成 Hooks 配置" → 粘贴到 `~/.codex/config.toml` → 启动 codex
 4. 状态说明（灰/黄/绿/红）
 5. HTTP API 文档
 6. 开发指南
@@ -1001,13 +1001,13 @@ git commit -m "docs: add Chinese README"
 
 ## Task 9: 端到端测试
 
-**Objective:** 启动 codex-bar，通过 curl 模拟 hooks 推送，验证托盘图标切换
+**Objective:** 启动 aglight，通过 curl 模拟 hooks 推送，验证托盘图标切换
 
 **Step 1: 编译并启动**
 
 ```bash
 make build
-./codex-bar &
+./aglight &
 ```
 
 **Step 2: 模拟各事件**

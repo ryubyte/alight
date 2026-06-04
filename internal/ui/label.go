@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/progrium/darwinkit/macos/appkit"
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 // StatusLabel returns a Chinese status label with emoji for the given status.

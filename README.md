@@ -1,202 +1,50 @@
-# Codex Bar — AI 编码助手状态红绿灯
+# AgLight — AI Agent 状态红绿灯
 
-macOS 菜单栏红绿灯，实时显示 [Codex CLI](https://github.com/openai/codex) 和 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 的工作状态。
+macOS 菜单栏红绿灯，实时显示 AI 编码助手的工作状态。
 
-![截图](docs/screenshot.png)
+支持 [Codex CLI](https://github.com/openai/codex) 和 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)，可扩展。
 
 ## 功能
 
-- 菜单栏红绿灯：空闲（灰）、运行中（黄）、需要审批（红闪烁）、已完成（绿）
-- 状态变化声音提醒（Sosumi / Glass）
-- 自动注入 Hooks 配置，支持 Codex CLI + Claude Code 双平台
-- HTTP API + SSE 事件流，方便集成
+- 🟡 运行中 — Agent 正在工作
+- 🟢 已完成 — Agent 完成任务
+- 🔴 需要审批 — Agent 等待用户确认（闪烁 + 音效提醒）
+- ⚫ 空闲 — 无活动
+
+## 工作原理
+
+AgLight 启动时自动向各 AI 工具注入 Hooks 配置，工具的状态事件通过 HTTP 推送到本地服务，驱动菜单栏红绿灯切换。
+
+退出时自动清理注入的配置，不留残留。
 
 ## 安装
 
-### go install
-
 ```bash
-go install github.com/ryubyte/codex-bar@latest
-```
-
-### 从源码构建
-
-```bash
-git clone https://github.com/ryubyte/codex-bar.git
-cd codex-bar
+git clone https://github.com/ryubyte/aglight.git
+cd aglight
 make build
+make install   # 可选，安装到 /usr/local/bin
 ```
 
-构建产物为当前目录下的 `codex-bar` 二进制。
-
-### 安装到 PATH
+## 使用
 
 ```bash
-make install
+aglight
 ```
 
-## 使用方法
-
-启动 Codex Bar：
-
-```bash
-codex-bar
-```
-
-启动后菜单栏出现灰色圆点图标，Codex Bar 会自动：
-
-1. 检测可用端口（默认从 9876 开始）
-2. 清理旧版 Hooks 配置
-3. 注入新的 Hooks 到 `~/.codex/config.toml`（Codex CLI）和 `~/.claude/settings.json`（Claude Code）
-4. 启动 HTTP 服务监听状态变更
-
-正常启动 Codex CLI 或 Claude Code 即可，状态灯自动切换。
-
-菜单操作：
-
-- **Hooks 配置**：点击复制 TOML 到剪贴板
-- **重置为空闲**：手动重置状态
-- **声音**：开关声音提醒
-- **退出**：清理 Hooks 并退出
-
-## 状态说明
-
-| 颜色 | 状态 | 含义 |
-|------|------|------|
-| 灰色 | idle（空闲） | 未在运行 |
-| 黄色 | running（运行中） | 正在处理任务 |
-| 红色闪烁 | approval_needed（需要审批） | 等待用户批准操作 |
-| 绿色 | completed（已完成） | 完成当前任务 |
-
-## 自动 Hooks 注入
-
-### Codex CLI
-
-启动时自动修改 `~/.codex/config.toml`，为以下 10 个事件注入 Hook：
-
-| 事件 | 触发时机 | 灯色 |
-|------|----------|------|
-| SessionStart | 会话启动 | 黄 |
-| PreToolUse | 工具执行前 | 黄 |
-| PostToolUse | 工具执行后 | 黄 |
-| UserPromptSubmit | 用户提交提示 | 黄 |
-| PreCompact | 压缩前 | 黄 |
-| PostCompact | 压缩后 | 黄 |
-| SubagentStart | 子代理启动 | 黄 |
-| PermissionRequest | 需要审批 | 红 |
-| Stop | Agent 停止 | 绿 |
-| SubagentStop | 子代理停止 | 绿 |
-
-### Claude Code
-
-启动时自动修改 `~/.claude/settings.json`，为以下 4 个事件注入 Hook：
-
-| 事件 | 触发时机 | 灯色 |
-|------|----------|------|
-| SessionStart | 会话启动 | 黄 |
-| PermissionRequest | 需要审批 | 红 |
-| Stop | 正常完成 | 绿 |
-| StopFailure | 异常完成 | 绿 |
-
-每个 Hook 通过 `curl` 向本地 HTTP 服务发送 POST 请求。退出时自动清理所有注入的 Hook，不影响用户原有配置。
-
-## HTTP API
-
-### POST /update
-
-更新状态，由 Hooks 自动调用。
-
-```bash
-# 指定状态
-curl -X POST http://localhost:9876/update \
-  -d '{"status":"running","event":"SessionStart"}'
-
-# 从事件名推导状态
-curl -X POST http://localhost:9876/update \
-  -d '{"event":"PermissionRequest"}'
-```
-
-请求体字段：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| status | string | 可选。直接指定状态：idle / running / approval_needed / completed |
-| event | string | 事件名。status 为空时自动推导 |
-| session_id | string | 可选。会话 ID |
-| tool_name | string | 可选。工具名 |
-
-### GET /status
-
-查询当前状态。
-
-```bash
-curl http://localhost:9876/status
-```
-
-返回示例：
-
-```json
-{
-  "status": "running",
-  "updated_at": "2026-06-04T20:30:00+08:00",
-  "history": [...]
-}
-```
-
-### GET /events
-
-SSE 事件流，实时推送状态变更。客户端断开后自动注销回调，无内存泄漏。
-
-```bash
-curl http://localhost:9876/events
-```
-
-## 配置说明
-
-- **端口自动检测**：从 9876 开始扫描，自动选择可用端口（范围 9876-9975）
-- **声音开关**：菜单栏点击「声音」切换，默认开启
-- **Hooks 清理**：退出时（菜单退出 / SIGTERM / SIGINT）自动清理注入的 Hook
-- **注入标识**：所有注入的 Hook URL 包含 `?source=codex-bar` 参数，用于精确识别和清理
-
-## 手动测试
-
-不用 Codex 或 Claude Code 也可以手动测试状态灯：
-
-```bash
-# 黄灯 - 运行中
-curl -X POST http://localhost:9876/update -d '{"event":"SessionStart"}'
-
-# 红灯 - 需要审批
-curl -X POST http://localhost:9876/update -d '{"event":"PermissionRequest"}'
-
-# 绿灯 - 已完成
-curl -X POST http://localhost:9876/update -d '{"event":"Stop"}'
-```
-
-## 开发指南
-
-```bash
-# 运行测试
-go test ./... -v
-
-# 构建
-go build -o codex-bar .
-
-# 清理
-make clean
-```
+启动后菜单栏出现红绿灯图标，自动检测已安装的 AI 工具并注入 hooks。
 
 ## 项目结构
 
 ```
-codex-bar/
+aglight/
 ├── main.go                        # 入口，注册适配器 + AppKit 启动
 ├── internal/
 │   ├── core/                      # 核心层（零依赖 AI 工具）
 │   │   ├── adapter.go             # Adapter 接口 + Registry
 │   │   ├── server.go              # HTTP 服务 + SSE + 端口检测
-│   │   ├── state/                 # 状态机 + 回调管理
-│   │   │   └── state.go
+│   │   └── state/                 # 状态机 + 回调管理
+│   │       └── state.go
 │   ├── adapter/                   # 适配器层（每个 AI 工具一个子包）
 │   │   ├── codex/                 # Codex CLI: config.toml + TOML hooks
 │   │   │   └── codex.go
@@ -216,13 +64,14 @@ codex-bar/
 
 ### 新增适配器
 
-只需 3 步，核心代码零修改：
+只需 2 步，核心代码零修改：
 
 1. 在 `internal/adapter/` 下新建子包，实现 `core.Adapter` 接口：
 
 ```go
 type Adapter interface {
     Name() string                    // 唯一标识
+    IsInstalled() bool               // 工具是否已安装
     Inject(port string) error        // 注入 hooks
     Cleanup() error                  // 清理 hooks
     MapEvent(eventName string) state.Status  // 事件映射
@@ -235,15 +84,11 @@ type Adapter interface {
 registry.Register(your_adapter.New())
 ```
 
-3. 完成。
-
 ## 技术栈
 
 - Go 1.23+
-- [darwinkit](https://github.com/progrium/darwinkit) (AppKit) — macOS 原生菜单栏
-- [go-toml/v2](https://github.com/pelletier/go-toml) — TOML 配置读写
-- Go 标准库 `net/http` — HTTP 服务
-- Go 标准库 `encoding/json` — JSON 配置读写
+- [darwinkit](https://github.com/progrium/darwinkit) — macOS 原生 AppKit 绑定
+- [go-toml](https://github.com/pelletier/go-toml) — TOML 读写
 
 ## License
 

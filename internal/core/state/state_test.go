@@ -3,7 +3,7 @@ package state_test
 import (
 	"testing"
 
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 func TestMachine_Initial(t *testing.T) {

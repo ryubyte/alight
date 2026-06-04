@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 // UpdateRequest represents the JSON body for POST /update.

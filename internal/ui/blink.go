@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/progrium/darwinkit/macos/appkit"
-	"github.com/ryubyte/codex-bar/internal/icons"
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/icons"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 const blinkInterval = 1200 * time.Millisecond

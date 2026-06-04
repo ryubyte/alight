@@ -7,7 +7,7 @@ import (
 	"log"
 	"sync"
 
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 // Adapter is the interface that each AI tool adapter must implement.

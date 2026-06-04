@@ -6,8 +6,8 @@ import (
 	"github.com/progrium/darwinkit/helper/action"
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/progrium/darwinkit/objc"
-	"github.com/ryubyte/codex-bar/internal/icons"
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/icons"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 const (
@@ -26,7 +26,7 @@ type MenuConfig struct {
 func BuildMenu(cfg MenuConfig) appkit.Menu {
 	soundOn := true
 
-	menu := appkit.NewMenuWithTitle("Codex Bar")
+	menu := appkit.NewMenuWithTitle("AgLight")
 
 	mStatus := appkit.NewMenuItemWithTitleActionKeyEquivalent(StatusLabel(state.StatusIdle), objc.Selector{}, "")
 	mStatus.SetEnabled(false)
@@ -69,7 +69,7 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 		}
 
 		cfg.Blink.Btn.SetImage(icons.ForStatus(newStatus))
-		cfg.Blink.Btn.SetToolTip("Codex Bar " + StatusLabel(newStatus))
+		cfg.Blink.Btn.SetToolTip("AgLight " + StatusLabel(newStatus))
 		mStatus.SetTitle(StatusLabel(newStatus))
 
 		if soundOn {

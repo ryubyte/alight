@@ -11,12 +11,12 @@ import (
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/progrium/darwinkit/objc"
 
-	"github.com/ryubyte/codex-bar/internal/adapter/claude"
-	"github.com/ryubyte/codex-bar/internal/adapter/codex"
-	"github.com/ryubyte/codex-bar/internal/core"
-	corestate "github.com/ryubyte/codex-bar/internal/core/state"
-	"github.com/ryubyte/codex-bar/internal/icons"
-	"github.com/ryubyte/codex-bar/internal/ui"
+	"github.com/ryubyte/aglight/internal/adapter/claude"
+	"github.com/ryubyte/aglight/internal/adapter/codex"
+	"github.com/ryubyte/aglight/internal/core"
+	corestate "github.com/ryubyte/aglight/internal/core/state"
+	"github.com/ryubyte/aglight/internal/icons"
+	"github.com/ryubyte/aglight/internal/ui"
 )
 
 const defaultStartPort = 9876
@@ -67,7 +67,7 @@ func didLaunch(app appkit.Application, delegate *appkit.ApplicationDelegate) {
 	objc.Retain(&item)
 	btn := item.Button()
 	btn.SetImage(icons.ForStatus(machine.Current()))
-	btn.SetToolTip("Codex Bar idle")
+	btn.SetToolTip("AgLight idle")
 
 	// Blink controller
 	blink := ui.NewBlinkController(btn, machine)

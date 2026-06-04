@@ -5,7 +5,7 @@ package icons
 import (
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/progrium/darwinkit/macos/foundation"
-	"github.com/ryubyte/codex-bar/internal/core/state"
+	"github.com/ryubyte/aglight/internal/core/state"
 )
 
 // Icon logical size: 56pt wide x 22pt tall (menu bar height)

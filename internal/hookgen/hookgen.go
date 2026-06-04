@@ -7,7 +7,7 @@ type Config struct {
 	ServerAddr string
 }
 
-// DefaultServerAddr is the default address for the Codex Bar server.
+// DefaultServerAddr is the default address for the AgLight server.
 const DefaultServerAddr = "localhost:9876"
 
 // events is the list of all Codex hook events.
@@ -32,13 +32,13 @@ func Generate(cfg Config) string {
 		addr = DefaultServerAddr
 	}
 
-	result := "# Codex Bar - Status Light Hooks\n"
+	result := "# AgLight - Status Light Hooks\n"
 	result += "# Add the following to ~/.codex/config.toml\n"
 
 	for _, event := range events {
 		result += "\n"
 		result += fmt.Sprintf("[[hooks.%s]]\n", event)
-		result += fmt.Sprintf("hooks = [{ type = \"command\", command = \"curl -s -X POST 'http://%s/update?source=codex-bar' -d '{\\\\\"event\\\\\":\\\\\"%s\\\\\"}'\", async = true }]\n", addr, event)
+		result += fmt.Sprintf("hooks = [{ type = \"command\", command = \"curl -s -X POST 'http://%s/update?source=aglight' -d '{\\\\\"event\\\\\":\\\\\"%s\\\\\"}'\", async = true }]\n", addr, event)
 	}
 
 	return result
