@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pelletier/go-toml/v2"
 )
-
-// Marker comment injected into config to identify our entries
-const Marker = "# codex-bar:auto"
 
 // CodexConfig represents the ~/.codex/config.toml structure.
 // We only care about the hooks section; everything else is
@@ -73,7 +71,7 @@ func Write(cfg CodexConfig) error {
 }
 
 // Cleanup removes all hook entries previously injected by codex-bar.
-// It detects our entries by checking if the command contains "codex-bar/update".
+// It detects our entries by checking if the command contains the codex-bar update endpoint.
 func Cleanup(cfg CodexConfig) CodexConfig {
 	hooksRaw, ok := cfg["hooks"]
 	if !ok {
@@ -188,20 +186,11 @@ func Inject(cfg CodexConfig, serverAddr string) CodexConfig {
 	return cfg
 }
 
-// containsCodexBarURL checks if a command string contains the codex-bar update endpoint
+// containsCodexBarURL checks if a command string contains the codex-bar update endpoint.
+// It matches commands that reference /update on localhost or 127.0.0.1.
 func containsCodexBarURL(cmd string) bool {
-	return len(cmd) > 0 && (contains(cmd, "/update") && contains(cmd, "codex-bar") || contains(cmd, "/update") && (contains(cmd, "localhost") || contains(cmd, "127.0.0.1")))
-}
-
-func contains(s, sub string) bool {
-	return len(s) >= len(sub) && (s == sub || len(sub) == 0 || indexOf(s, sub) >= 0)
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i <= len(s)-len(sub); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
+	if !strings.Contains(cmd, "/update") {
+		return false
 	}
-	return -1
+	return strings.Contains(cmd, "localhost") || strings.Contains(cmd, "127.0.0.1")
 }

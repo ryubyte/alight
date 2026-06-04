@@ -2,6 +2,7 @@ package state
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -17,22 +18,31 @@ const (
 
 // Event represents a state transition event.
 type Event struct {
-	Status     Status    `json:"status"`
-	EventName  string    `json:"event_name"`
-	SessionID  string    `json:"session_id"`
-	ToolName   string    `json:"tool_name"`
-	Timestamp  time.Time `json:"timestamp"`
+	Status    Status    `json:"status"`
+	EventName string    `json:"event_name"`
+	SessionID string    `json:"session_id"`
+	ToolName  string    `json:"tool_name"`
+	Timestamp time.Time `json:"timestamp"`
 }
 
 // StateChangeCallback is called when the machine transitions between states.
 type StateChangeCallback func(old, new Status, event Event)
+
+// nextCallbackID is used to assign unique IDs to registered callbacks.
+var nextCallbackID atomic.Int64
+
+// callbackEntry pairs a callback with its unique ID for safe removal.
+type callbackEntry struct {
+	id uint64
+	cb StateChangeCallback
+}
 
 // Machine is a concurrent-safe state machine.
 type Machine struct {
 	mu        sync.RWMutex
 	current   Status
 	history   []Event
-	callbacks []StateChangeCallback
+	callbacks []callbackEntry
 }
 
 // NewMachine creates a new Machine with initial status StatusIdle.
@@ -57,13 +67,15 @@ func (m *Machine) Update(event Event) Status {
 	old := m.current
 	m.current = event.Status
 	m.history = append(m.history, event)
-	cbs := make([]StateChangeCallback, len(m.callbacks))
+	cbs := make([]callbackEntry, len(m.callbacks))
 	copy(cbs, m.callbacks)
 	m.mu.Unlock()
 
 	if old != event.Status {
-		for _, cb := range cbs {
-			cb(old, event.Status, event)
+		for _, entry := range cbs {
+			if entry.cb != nil {
+				entry.cb(old, event.Status, event)
+			}
 		}
 	}
 
@@ -71,10 +83,22 @@ func (m *Machine) Update(event Event) Status {
 }
 
 // OnChange registers a callback that fires on state changes.
-func (m *Machine) OnChange(cb StateChangeCallback) {
+// It returns an unregister function that removes the callback when called.
+func (m *Machine) OnChange(cb StateChangeCallback) func() {
+	id := uint64(nextCallbackID.Add(1))
 	m.mu.Lock()
-	defer m.mu.Unlock()
-	m.callbacks = append(m.callbacks, cb)
+	m.callbacks = append(m.callbacks, callbackEntry{id: id, cb: cb})
+	m.mu.Unlock()
+	return func() {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		for i, entry := range m.callbacks {
+			if entry.id == id {
+				m.callbacks = append(m.callbacks[:i], m.callbacks[i+1:]...)
+				return
+			}
+		}
+	}
 }
 
 // History returns a copy of the event history.

@@ -143,7 +143,8 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	s.machine.OnChange(func(old, new state.Status, event state.Event) {
+	// Register callback and obtain unregister function
+	unregister := s.machine.OnChange(func(old, new state.Status, event state.Event) {
 		data, _ := json.Marshal(event)
 		fmt.Fprintf(w, "data: %s\n\n", data)
 		flusher.Flush()
@@ -153,6 +154,7 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, ": connected\n\n")
 	flusher.Flush()
 
-	// Block until client disconnects
+	// Block until client disconnects, then unregister the callback
 	<-r.Context().Done()
+	unregister()
 }

@@ -134,3 +134,27 @@ func TestTransitionFromHook(t *testing.T) {
 		})
 	}
 }
+
+func TestOnChange_Unregister(t *testing.T) {
+	m := NewMachine()
+
+	var called int32
+	unregister := m.OnChange(func(old, new Status, event Event) {
+		atomic.AddInt32(&called, 1)
+	})
+
+	// Trigger a change — callback should fire
+	m.Update(Event{Status: StatusRunning, EventName: "SessionStart", Timestamp: time.Now()})
+	if atomic.LoadInt32(&called) != 1 {
+		t.Fatalf("expected 1 callback, got %d", called)
+	}
+
+	// Unregister the callback
+	unregister()
+
+	// Trigger another change — callback should NOT fire
+	m.Update(Event{Status: StatusCompleted, EventName: "Stop", Timestamp: time.Now()})
+	if atomic.LoadInt32(&called) != 1 {
+		t.Fatalf("expected callback to be unregistered, got %d calls", called)
+	}
+}
