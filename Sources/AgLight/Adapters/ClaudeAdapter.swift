@@ -33,7 +33,7 @@ public struct ClaudeAdapter: Adapter {
 
     public func mapEvent(_ eventName: String) -> Status {
         switch eventName {
-        case "SessionStart", "UserPromptSubmit":
+        case "SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse":
             return .running
         case "PermissionRequest":
             return .approvalNeeded
@@ -66,6 +66,8 @@ public struct ClaudeAdapter: Adapter {
     private static let claudeEvents = [
         "SessionStart",
         "UserPromptSubmit",
+        "PreToolUse",
+        "PostToolUse",
         "Stop",
         "StopFailure",
         "PermissionRequest",
