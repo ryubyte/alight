@@ -1,16 +1,16 @@
 .PHONY: build run test clean install
 
 build:
-	go build -o aglight .
+	swift build -c release
 
-run: build
-	./aglight
+run:
+	swift run AgLight
 
 test:
-	go test ./... -v
+	swift run AgLightTestRunner
 
 clean:
-	rm -f aglight
+	rm -rf .build
 
 install: build
-	cp aglight /usr/local/bin/
+	cp .build/release/AgLight /usr/local/bin/aglight

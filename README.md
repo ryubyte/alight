@@ -26,6 +26,8 @@ make build
 make install   # 可选，安装到 /usr/local/bin
 ```
 
+要求：macOS 14+ (Sonoma)，Swift 5.9+ 工具链（Xcode 或 Command Line Tools）。
+
 ## 使用
 
 ```bash
@@ -38,57 +40,58 @@ aglight
 
 ```
 aglight/
-├── main.go                        # 入口，注册适配器 + AppKit 启动
-├── internal/
-│   ├── core/                      # 核心层（零依赖 AI 工具）
-│   │   ├── adapter.go             # Adapter 接口 + Registry
-│   │   ├── server.go              # HTTP 服务 + SSE + 端口检测
-│   │   └── state/                 # 状态机 + 回调管理
-│   │       └── state.go
-│   ├── adapter/                   # 适配器层（每个 AI 工具一个子包）
-│   │   ├── codex/                 # Codex CLI: config.toml + TOML hooks
-│   │   │   └── codex.go
-│   │   └── claude/                # Claude Code: settings.json + JSON hooks
-│   │       └── claude.go
-│   ├── hookgen/                   # Hooks TOML 生成（复制到剪贴板用）
-│   │   └── hookgen.go
-│   ├── icons/                     # darwinkit NSImage 红绿灯绘制
-│   │   └── icons.go
-│   └── ui/                        # 菜单栏 UI
-│       ├── blink.go               # 红灯闪烁控制器
-│       ├── label.go               # 状态标签 + 声音 + 剪贴板
-│       └── menu.go                # 菜单构建
-├── Makefile
-└── README.md
+├── Package.swift                      # Swift Package 配置
+├── Sources/
+│   ├── AgLight/                       # 库代码
+│   │   ├── Core/
+│   │   │   ├── StateMachine.swift     # 状态机 + 回调管理
+│   │   │   ├── Adapter.swift          # Adapter 协议 + Registry
+│   │   │   └── Server.swift           # HTTP 服务 (swift-nio) + SSE
+│   │   ├── Adapters/
+│   │   │   ├── ClaudeAdapter.swift    # Claude Code: settings.json hooks
+│   │   │   └── CodexAdapter.swift     # Codex CLI: config.toml hooks
+│   │   ├── Icons/
+│   │   │   └── SignalRenderer.swift   # NSImage 红绿灯绘制
+│   │   ├── App/
+│   │   │   ├── AppDelegate.swift      # 菜单栏 UI + 生命周期
+│   │   │   └── BlinkController.swift  # 红灯闪烁控制器
+│   │   └── Util/
+│   │       └── TOMLParser.swift       # 最小 TOML 解析器
+│   └── App/
+│       └── main.swift                 # 入口
+├── Tests/
+│   └── Runner/
+│       └── main.swift                 # 测试运行器
+└── Makefile
 ```
 
 ### 新增适配器
 
 只需 2 步，核心代码零修改：
 
-1. 在 `internal/adapter/` 下新建子包，实现 `core.Adapter` 接口：
+1. 在 `Sources/AgLight/Adapters/` 下新建文件，实现 `Adapter` 协议：
 
-```go
-type Adapter interface {
-    Name() string                    // 唯一标识
-    IsInstalled() bool               // 工具是否已安装
-    Inject(port string) error        // 注入 hooks
-    Cleanup() error                  // 清理 hooks
-    MapEvent(eventName string) state.Status  // 事件映射
+```swift
+public protocol Adapter {
+    var name: String { get }
+    func isInstalled() -> Bool
+    func inject(port: String) throws
+    func cleanup() throws
+    func mapEvent(_ eventName: String) -> Status
 }
 ```
 
-2. 在 `main.go` 中注册：
+2. 在 `AppDelegate.swift` 中注册：
 
-```go
-registry.Register(your_adapter.New())
+```swift
+registry.register(YourAdapter())
 ```
 
 ## 技术栈
 
-- Go 1.23+
-- [darwinkit](https://github.com/progrium/darwinkit) — macOS 原生 AppKit 绑定
-- [go-toml](https://github.com/pelletier/go-toml) — TOML 读写
+- Swift 5.9+ / macOS 14+
+- [swift-nio](https://github.com/apple/swift-nio) — 轻量 HTTP 服务
+- AppKit — macOS 原生菜单栏 UI
 
 ## License
 

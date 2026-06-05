@@ -1,2 +1,4 @@
-aglight
+.build/
+.swiftpm/
 .hermes/
+.claude/
