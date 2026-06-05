@@ -91,7 +91,7 @@ func (a *Adapter) Cleanup() error {
 // MapEvent maps a Claude Code event name to a Status.
 func (a *Adapter) MapEvent(eventName string) state.Status {
 	switch eventName {
-	case "SessionStart", "UserPromptSubmit":
+	case "SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse":
 		return state.StatusRunning
 	case "PermissionRequest":
 		return state.StatusApprovalNeeded
@@ -209,6 +209,8 @@ func cleanupHooks(settings map[string]interface{}) map[string]interface{} {
 var claudeEvents = []string{
 	"SessionStart",
 	"UserPromptSubmit",
+	"PreToolUse",
+	"PostToolUse",
 	"Stop",
 	"StopFailure",
 	"PermissionRequest",

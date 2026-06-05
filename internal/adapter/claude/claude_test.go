@@ -68,8 +68,8 @@ func TestInject(t *testing.T) {
 	if !ok {
 		t.Fatal("no hooks section")
 	}
-	if len(hooks) != 5 {
-		t.Fatalf("expected 5 hook events, got %d", len(hooks))
+	if len(hooks) != 7 {
+		t.Fatalf("expected 7 hook events, got %d", len(hooks))
 	}
 }
 
