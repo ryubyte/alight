@@ -3,11 +3,12 @@
 package ui
 
 import (
+	"github.com/progrium/darwinkit/dispatch"
 	"github.com/progrium/darwinkit/helper/action"
 	"github.com/progrium/darwinkit/macos/appkit"
 	"github.com/progrium/darwinkit/objc"
-	"github.com/ryubyte/aglight/internal/icons"
 	"github.com/ryubyte/aglight/internal/core/state"
+	"github.com/ryubyte/aglight/internal/icons"
 )
 
 const (
@@ -62,29 +63,31 @@ func BuildMenu(cfg MenuConfig) appkit.Menu {
 	})
 	menu.AddItem(mQuit)
 
-	// Register status change callback to update UI
+	// Register status change callback to update UI (must dispatch to main thread)
 	cfg.Machine.OnChange(func(old, newStatus state.Status, event state.Event) {
-		if old == state.StatusApprovalNeeded && newStatus != state.StatusApprovalNeeded {
-			cfg.Blink.Stop()
-		}
-
-		cfg.Blink.Btn.SetImage(icons.ForStatus(newStatus))
-		cfg.Blink.Btn.SetToolTip("AgLight " + StatusLabel(newStatus))
-		mStatus.SetTitle(StatusLabel(newStatus))
-
-		if soundOn {
-			switch newStatus {
-			case state.StatusApprovalNeeded:
-				PlaySound(soundApproval)
-				cfg.Blink.Start()
-			case state.StatusCompleted:
-				PlaySound(soundComplete)
+		dispatch.MainQueue().DispatchAsync(func() {
+			if old == state.StatusApprovalNeeded && newStatus != state.StatusApprovalNeeded {
+				cfg.Blink.Stop()
 			}
-		} else {
-			if newStatus == state.StatusApprovalNeeded {
-				cfg.Blink.Start()
+
+			cfg.Blink.Btn.SetImage(icons.ForStatus(newStatus))
+			cfg.Blink.Btn.SetToolTip("AgLight " + StatusLabel(newStatus))
+			mStatus.SetTitle(StatusLabel(newStatus))
+
+			if soundOn {
+				switch newStatus {
+				case state.StatusApprovalNeeded:
+					PlaySound(soundApproval)
+					cfg.Blink.Start()
+				case state.StatusCompleted:
+					PlaySound(soundComplete)
+				}
+			} else {
+				if newStatus == state.StatusApprovalNeeded {
+					cfg.Blink.Start()
+				}
 			}
-		}
+		})
 	})
 
 	return menu

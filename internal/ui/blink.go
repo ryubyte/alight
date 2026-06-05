@@ -5,9 +5,10 @@ package ui
 import (
 	"time"
 
+	"github.com/progrium/darwinkit/dispatch"
 	"github.com/progrium/darwinkit/macos/appkit"
-	"github.com/ryubyte/aglight/internal/icons"
 	"github.com/ryubyte/aglight/internal/core/state"
+	"github.com/ryubyte/aglight/internal/icons"
 )
 
 const blinkInterval = 1200 * time.Millisecond
@@ -35,11 +36,13 @@ func (b *BlinkController) Start() {
 	b.timer = time.AfterFunc(blinkInterval, func() {
 		b.on = !b.on
 		if b.machine.Current() == state.StatusApprovalNeeded {
-			if b.on {
-				b.Btn.SetImage(icons.ForStatus(state.StatusApprovalNeeded))
-			} else {
-				b.Btn.SetImage(icons.ForStatusDim(state.StatusApprovalNeeded))
-			}
+			dispatch.MainQueue().DispatchAsync(func() {
+				if b.on {
+					b.Btn.SetImage(icons.ForStatus(state.StatusApprovalNeeded))
+				} else {
+					b.Btn.SetImage(icons.ForStatusDim(state.StatusApprovalNeeded))
+				}
+			})
 			b.timer.Reset(blinkInterval)
 		}
 	})
