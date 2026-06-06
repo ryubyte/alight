@@ -1,94 +1,68 @@
-# AgLight — AI Agent 状态红绿灯
+# AgLight
 
 macOS 菜单栏红绿灯，实时显示 AI 编码助手的工作状态。
 
-支持 [Codex CLI](https://github.com/openai/codex) 和 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)，可扩展。
+支持 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 和 [Codex CLI](https://github.com/openai/codex)。
 
 ## 功能
 
-- 🟡 运行中 — Agent 正在工作
-- 🟢 已完成 — Agent 完成任务
-- 🔴 需要审批 — Agent 等待用户确认（闪烁 + 音效提醒）
-- ⚫ 空闲 — 无活动
+- 🟡 **运行中** — Agent 正在工作
+- 🟢 **已完成** — Agent 完成任务
+- 🔴 **需要审批** — Agent 等待确认（闪烁 + 音效提醒）
+- ⚫ **空闲** — 无活动
 
-## 工作原理
+## 特性
 
-AgLight 启动时自动向各 AI 工具注入 Hooks 配置，工具的状态事件通过 HTTP 推送到本地服务，驱动菜单栏红绿灯切换。
-
-退出时自动清理注入的配置，不留残留。
+- **零配置** — 启动后自动检测已安装的 AI 工具并注入 Hooks，无需手动设置
+- **无残留** — 退出时自动清理所有注入的配置，不影响原有设置
+- **非侵入** — 仅追加自己的 Hooks，与你已有的配置互不干扰
+- **状态提醒** — 需要审批时红灯闪烁 + 音效提示，完成后绿灯提示，即使不看屏幕也能感知
+- **可扩展** — 支持接入更多 AI 工具
 
 ## 安装
+
+### 一键安装（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ryubyte/aglight/master/install.sh | sh
+```
+
+自动完成：下载二进制 → 安装到 `~/.local/bin` → 启动
+
+### 卸载
+
+```bash
+rm ~/.local/bin/aglight
+```
+
+### 从源码构建
+
+**前置条件**：Go 1.23+、macOS 12+
 
 ```bash
 git clone https://github.com/ryubyte/aglight.git
 cd aglight
 make build
-make install   # 可选，安装到 /usr/local/bin
+make install
 ```
 
 ## 使用
 
-```bash
-aglight
-```
+运行 `aglight` 启动，菜单栏出现红绿灯图标。打开 Claude Code 或 Codex CLI 开始工作，红绿灯自动跟随状态变化。
 
-启动后菜单栏出现红绿灯图标，自动检测已安装的 AI 工具并注入 hooks。
+点击菜单栏图标可：
+- **重置** — 手动回到空闲状态
+- **声音** — 开关状态变化提示音（默认开启）
+- **退出** — 退出 AgLight
 
-## 项目结构
+如需开机自启，可在系统设置 → 通用 → 登录项中添加 AgLight。
 
-```
-aglight/
-├── main.go                        # 入口，注册适配器 + AppKit 启动
-├── internal/
-│   ├── core/                      # 核心层（零依赖 AI 工具）
-│   │   ├── adapter.go             # Adapter 接口 + Registry
-│   │   ├── server.go              # HTTP 服务 + SSE + 端口检测
-│   │   └── state/                 # 状态机 + 回调管理
-│   │       └── state.go
-│   ├── adapter/                   # 适配器层（每个 AI 工具一个子包）
-│   │   ├── codex/                 # Codex CLI: config.toml + TOML hooks
-│   │   │   └── codex.go
-│   │   └── claude/                # Claude Code: settings.json + JSON hooks
-│   │       └── claude.go
-│   ├── hookgen/                   # Hooks TOML 生成（复制到剪贴板用）
-│   │   └── hookgen.go
-│   ├── icons/                     # darwinkit NSImage 红绿灯绘制
-│   │   └── icons.go
-│   └── ui/                        # 菜单栏 UI
-│       ├── blink.go               # 红灯闪烁控制器
-│       ├── label.go               # 状态标签 + 声音 + 剪贴板
-│       └── menu.go                # 菜单构建
-├── Makefile
-└── README.md
-```
+## 支持的工具
 
-### 新增适配器
-
-只需 2 步，核心代码零修改：
-
-1. 在 `internal/adapter/` 下新建子包，实现 `core.Adapter` 接口：
-
-```go
-type Adapter interface {
-    Name() string                    // 唯一标识
-    IsInstalled() bool               // 工具是否已安装
-    Inject(port string) error        // 注入 hooks
-    Cleanup() error                  // 清理 hooks
-    MapEvent(eventName string) state.Status  // 事件映射
-}
-```
-
-2. 在 `main.go` 中注册：
-
-```go
-registry.Register(your_adapter.New())
-```
-
-## 技术栈
-
-- Go 1.23+
-- [darwinkit](https://github.com/progrium/darwinkit) — macOS 原生 AppKit 绑定
-- [go-toml](https://github.com/pelletier/go-toml) — TOML 读写
+| 工具 | 状态 |
+|------|------|
+| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | ✅ 已支持 |
+| [Codex CLI](https://github.com/openai/codex) | ✅ 已支持 |
 
 ## License
 

@@ -1,2 +1,4 @@
 aglight
 .hermes/
+build/
+AgLight.app/
